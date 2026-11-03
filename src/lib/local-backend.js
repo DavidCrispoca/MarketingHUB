@@ -1,4 +1,4 @@
-const DATABASE_KEY = "marketinghub.local.database.v1";
+const DATABASE_KEY = "marketinghub.local.database.v2";
 const FILE_DATABASE = "marketinghub-local-files";
 const FILE_STORE = "objects";
 const WORKSPACE_ID = "local-marketinghub-workspace";
@@ -9,67 +9,275 @@ const day = (offset = 0) => {
   date.setDate(date.getDate() + offset);
   return date;
 };
+const at = (date, hours = 12) => new Date(`${date}T${String(hours).padStart(2, "0")}:00:00Z`);
 const uuid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-const DEMO_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#f4c66a"/><stop offset="1" stop-color="#df704e"/></linearGradient></defs><rect width="1200" height="1500" fill="#f7eee1"/><circle cx="830" cy="510" r="360" fill="url(#g)"/><path d="M170 980c210-230 420-170 620-20s300 160 470-30v570H170z" fill="#30483a"/><text x="100" y="180" fill="#30483a" font-family="sans-serif" font-size="42" letter-spacing="10">CAFÉ DEL VALLE</text><text x="100" y="1270" fill="white" font-family="sans-serif" font-weight="700" font-size="82">Un origen</text><text x="100" y="1360" fill="white" font-family="sans-serif" font-size="82">que se disfruta.</text></svg>`;
-const DEMO_STORY_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"><rect width="1080" height="1920" fill="#30483a"/><circle cx="540" cy="720" r="350" fill="#df704e"/><path d="M540 420c-165 165-205 280-124 360 54 54 117 32 124 28 7 4 70 26 124-28 81-80 41-195-124-360z" fill="#f7eee1"/><path d="M540 522c-62 105-68 202 0 283" fill="none" stroke="#30483a" stroke-width="22" stroke-linecap="round"/><text x="84" y="150" fill="#f7eee1" font-family="sans-serif" font-size="30" letter-spacing="9">CAFÉ DEL VALLE · HISTORIAS DE ORIGEN</text><text x="84" y="1260" fill="#f7eee1" font-family="Georgia,serif" font-size="98">Cada cosecha</text><text x="84" y="1380" fill="#f7eee1" font-family="Georgia,serif" font-size="98">tiene su ritmo.</text><path d="M84 1460h245" stroke="#df704e" stroke-width="8"/><text x="84" y="1540" fill="#f7eee1" font-family="sans-serif" font-size="35">Nariño, Colombia · Temporada 2026</text></svg>`;
-const DEMO_CAROUSEL_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500"><rect width="1200" height="1500" fill="#f7eee1"/><path d="M0 1060C270 860 460 1120 700 980s350-100 500-10v530H0z" fill="#30483a"/><circle cx="790" cy="570" r="260" fill="#df704e"/><circle cx="790" cy="570" r="190" fill="#f4c66a"/><path d="M790 410c-92 92-114 156-69 201 30 30 65 18 69 15 4 3 39 15 69-15 45-45 23-109-69-201z" fill="#30483a"/><path d="M790 470c-34 58-38 112 0 156" fill="none" stroke="#f7eee1" stroke-width="12" stroke-linecap="round"/><text x="82" y="140" fill="#30483a" font-family="sans-serif" font-size="30" letter-spacing="8">FICHA DE ORIGEN · LOTE 08</text><text x="82" y="1240" fill="#f7eee1" font-family="Georgia,serif" font-size="85">De la finca</text><text x="82" y="1340" fill="#f7eee1" font-family="Georgia,serif" font-size="85">a tu mesa.</text></svg>`;
-const DEMO_WORDMARK = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360"><g fill="none" stroke="#30483a" stroke-width="12"><path d="M150 92c-88 96-88 176 0 176s88-80 0-176z"/><path d="M150 119v122"/><path d="M150 174c-35-29-52-55-51-82 35 9 58 40 51 82z"/></g><text x="290" y="177" fill="#30483a" font-family="Georgia,serif" font-size="94">Café del Valle</text><text x="300" y="244" fill="#6b756a" font-family="sans-serif" font-size="26" letter-spacing="11">ORIGEN · NARIÑO · COLOMBIA</text></svg>`;
-const DEMO_MONOGRAM = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640"><rect x="32" y="32" width="576" height="576" rx="128" fill="#30483a"/><path d="M320 142c-132 144-132 264 0 264s132-120 0-264z" fill="#f7eee1"/><path d="M320 181v183" fill="none" stroke="#df704e" stroke-width="18" stroke-linecap="round"/><path d="M320 262c-50-42-74-79-72-118 51 14 85 58 72 118z" fill="#df704e"/></svg>`;
+// Deterministic pseudo-random so the local demo reproduces the same numbers
+// every time the browser seeds the database.
+const hash = (text) => {
+  let value = 5381;
+  for (let index = 0; index < text.length; index += 1) {
+    value = ((value * 33) ^ text.charCodeAt(index)) >>> 0;
+  }
+  return value;
+};
+
+const DEMO_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500"><rect width="1200" height="1500" fill="#F3EBDD"/><path d="M120 1500V780a320 320 0 0 1 640 0v720z" fill="#2F4A3E"/><path d="M280 1500V840a160 160 0 0 1 320 0v660z" fill="#F3EBDD"/><circle cx="930" cy="430" r="150" fill="#B4552D"/><circle cx="930" cy="430" r="96" fill="#C69A4B"/><text x="100" y="180" fill="#2F4A3E" font-family="Georgia,serif" font-size="46" letter-spacing="6">CASA GÓMEZ RAMÍREZ</text><text x="100" y="250" fill="#B4552D" font-family="sans-serif" font-size="26" letter-spacing="8">IBAGUÉ · DESDE 1925</text><text x="100" y="1310" fill="#F3EBDD" font-family="Georgia,serif" font-size="86">La memoria</text><text x="100" y="1400" fill="#F3EBDD" font-family="Georgia,serif" font-size="86">sigue abierta.</text></svg>`;
+const DEMO_STORY_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"><rect width="1080" height="1920" fill="#2F4A3E"/><circle cx="540" cy="820" r="330" fill="#F3EBDD"/><circle cx="540" cy="820" r="150" fill="#B4552D"/><rect x="500" y="820" width="80" height="190" fill="#B4552D"/><text x="84" y="170" fill="#F3EBDD" font-family="sans-serif" font-size="30" letter-spacing="9">CASA GÓMEZ RAMÍREZ · IBAGUÉ</text><text x="84" y="1370" fill="#F3EBDD" font-family="Georgia,serif" font-size="96">Una casa</text><text x="84" y="1480" fill="#F3EBDD" font-family="Georgia,serif" font-size="96">que respira.</text><path d="M84 1560h240" stroke="#C69A4B" stroke-width="8"/><text x="84" y="1640" fill="#F3EBDD" font-family="sans-serif" font-size="34">Cra 2 #10-36 · Centro histórico</text></svg>`;
+const DEMO_CAROUSEL_ART = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500"><rect width="1200" height="1500" fill="#F3EBDD"/><path d="M0 1080c230-190 420-60 620 60s360 160 580-40v400H0z" fill="#2F4A3E"/><rect x="760" y="300" width="300" height="420" rx="150" fill="#B4552D"/><rect x="820" y="380" width="180" height="260" rx="90" fill="#F3EBDD"/><text x="82" y="150" fill="#2F4A3E" font-family="sans-serif" font-size="30" letter-spacing="8">CINCO RINCONES · UN SOLO LUGAR</text><text x="82" y="1250" fill="#F3EBDD" font-family="Georgia,serif" font-size="84">Lo que guarda</text><text x="82" y="1350" fill="#F3EBDD" font-family="Georgia,serif" font-size="84">la casa.</text></svg>`;
+const DEMO_WORDMARK = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360"><g fill="none" stroke="#2F4A3E" stroke-width="10"><rect x="96" y="76" width="180" height="200" rx="8"/><path d="M96 146h180M186 76v200"/></g><text x="330" y="180" fill="#2F4A3E" font-family="Georgia,serif" font-size="86">Casa Gómez Ramírez</text><text x="340" y="244" fill="#B4552D" font-family="sans-serif" font-size="24" letter-spacing="11">MEMORIA · CAFÉ · PATRIMONIO</text></svg>`;
+const DEMO_MONOGRAM = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640"><rect x="32" y="32" width="576" height="576" rx="96" fill="#2F4A3E"/><rect x="150" y="150" width="340" height="340" rx="6" fill="none" stroke="#F3EBDD" stroke-width="12"/><path d="M150 320h340M320 150v340" stroke="#C69A4B" stroke-width="10"/><text x="320" y="392" text-anchor="middle" fill="#F3EBDD" font-family="Georgia,serif" font-size="150">GR</text></svg>`;
 const DEMO_VISUALS = [
-  { id: "c0000000-0000-4000-8000-000000000002", name: "01-ficha-lote-08.svg", artwork: DEMO_CAROUSEL_ART, folder: "Historias de origen", tags: ["origen", "carrusel", "Nariño"], width: 1200, height: 1500, date: -3 },
-  { id: "c0000000-0000-4000-8000-000000000003", name: "02-historia-cosecha.svg", artwork: DEMO_STORY_ART, folder: "Historias de origen", tags: ["cosecha", "story", "temporada"], width: 1080, height: 1920, date: -2 },
+  { id: "c0000000-0000-4000-8000-000000000002", name: "01-cinco-rincones.svg", artwork: DEMO_CAROUSEL_ART, folder: "Patrimonio", tags: ["carrusel", "rincones", "memoria"], width: 1200, height: 1500, date: -3 },
+  { id: "c0000000-0000-4000-8000-000000000003", name: "02-historia-casa.svg", artwork: DEMO_STORY_ART, folder: "Patrimonio", tags: ["story", "1925", "patrimonio"], width: 1080, height: 1920, date: -2 },
   { id: "c0000000-0000-4000-8000-000000000004", name: "logo-wordmark.svg", artwork: DEMO_WORDMARK, folder: "Identidad visual", tags: ["logo", "identidad", "principal"], width: 1200, height: 360, date: -50 },
   { id: "c0000000-0000-4000-8000-000000000005", name: "logo-monograma.svg", artwork: DEMO_MONOGRAM, folder: "Identidad visual", tags: ["logo", "identidad", "símbolo"], width: 640, height: 640, date: -50 },
 ];
 const demoVisualRow = (visual) => ({ id: visual.id, brand_id: BRAND_ID, name: visual.name, original_path: `${BRAND_ID}/media/${visual.id}.svg`, thumb_path: `${BRAND_ID}/thumbs/${visual.id}.svg`, mime_type: "image/svg+xml", size_bytes: new Blob([visual.artwork]).size, width: visual.width, height: visual.height, duration_seconds: null, status: "pendiente", folder: visual.folder, tags: visual.tags, created_at: iso(day(visual.date)), updated_at: iso(day(visual.date)) });
 
+const POSTS = [
+  ["2026-09-03T22:00:00Z", "2026-09-05T12:00:00Z", 940, 62, 7, 3, 9, 780, "IMAGE", "FEED", "La casa cumple 101 años y sigue contando historias en el centro de Ibagué."],
+  ["2026-09-06T15:00:00Z", "2026-09-08T12:00:00Z", 2380, 96, 11, 8, 14, 1450, "VIDEO", "REELS", "El patio donde la familia Gómez Ramírez reunía a sus amigos sigue siendo el corazón de la casa."],
+  ["2026-09-10T21:30:00Z", "2026-09-12T12:00:00Z", 860, 54, 5, 2, 11, 720, "CAROUSEL_ALBUM", "FEED", "Cinco objetos que guardan la memoria de una familia tolimense."],
+  ["2026-09-14T14:30:00Z", "2026-09-16T12:00:00Z", 810, 71, 9, 4, 7, 690, "IMAGE", "FEED", "Café de origen, servido en el patio. Todos los días hasta las 6 p. m."],
+  ["2026-09-17T23:00:00Z", "2026-09-19T12:00:00Z", 3120, 132, 18, 12, 21, 1980, "VIDEO", "REELS", "Chisme histórico: la casa se construyó en 1925 con materiales de la región."],
+  ["2026-09-20T16:00:00Z", "2026-09-22T12:00:00Z", 2760, 118, 14, 9, 17, 1740, "VIDEO", "REELS", "Noche de museos: así se ve la casa cuando cae el sol."],
+  ["2026-09-23T20:00:00Z", "2026-09-25T12:00:00Z", 1310, 88, 12, 6, 15, 1120, "CAROUSEL_ALBUM", "FEED", "Samuel Gómez Ramírez y las historias que rescató de su propio barrio."],
+  ["2026-09-27T15:30:00Z", "2026-09-29T12:00:00Z", 760, 65, 6, 3, 8, 640, "IMAGE", "FEED", "Los balcones vuelven a mirar la carrera segunda."],
+  ["2026-09-30T22:30:00Z", "2026-10-02T12:00:00Z", 2410, 104, 10, 7, 16, 1520, "VIDEO", "REELS", "El sonido de la casa: las puertas, el patio, la calle."],
+  ["2026-10-01T22:30:00Z", "2026-10-03T12:00:00Z", 1420, 92, 13, 7, 18, 1240, "CAROUSEL_ALBUM", "FEED", "Cinco rincones que guardan la memoria de Ibagué."],
+  ["2026-10-03T15:00:00Z", "2026-10-05T12:00:00Z", 3640, 148, 21, 14, 26, 2260, "VIDEO", "REELS", "El patio que en 1925 era el corazón de la casa."],
+  ["2026-10-06T21:00:00Z", "2026-10-08T12:00:00Z", 1120, 87, 16, 8, 12, 980, "IMAGE", "FEED", "Chisme histórico: la casa se construyó en 1925."],
+  ["2026-10-08T16:00:00Z", "2026-10-10T12:00:00Z", 2980, 121, 19, 11, 22, 1890, "VIDEO", "REELS", "Hoy abrimos el taller de patrimonio material. Gracias a quienes nos acompañaron."],
+  ["2026-10-11T20:00:00Z", "2026-10-13T12:00:00Z", 1680, 109, 17, 9, 20, 1460, "CAROUSEL_ALBUM", "FEED", "Samuel Gómez y las historias que rescató."],
+  ["2026-10-14T14:00:00Z", "2026-10-16T12:00:00Z", 940, 78, 11, 5, 10, 820, "IMAGE", "FEED", "Café de origen en el centro de Ibagué."],
+  ["2026-10-18T16:30:00Z", "2026-10-20T12:00:00Z", 4210, 167, 26, 18, 31, 2580, "VIDEO", "REELS", "Café con historia: recorrido inmersivo por la casa."],
+  ["2026-10-22T21:00:00Z", "2026-10-24T12:00:00Z", 1960, 134, 22, 13, 24, 1720, "CAROUSEL_ALBUM", "FEED", "Antes y después: la restauración de los balcones."],
+  ["2026-10-24T23:30:00Z", "2026-10-26T12:00:00Z", 4680, 189, 29, 21, 35, 2910, "VIDEO", "REELS", "Noche patrimonial: la casa después del atardecer."],
+  ["2026-10-28T15:30:00Z", "2026-10-30T12:00:00Z", 880, 73, 9, 4, 9, 760, "IMAGE", "FEED", "El reloj de la sala sigue marcando las horas de la casa."],
+  ["2026-10-31T23:00:00Z", "2026-11-02T12:00:00Z", 4320, 176, 31, 19, 28, 2640, "VIDEO", "REELS", "Historias que no duermen: recorrido nocturno de cierre de mes."],
+];
+
+const EVENTS = [
+  ["e0e00000-0000-4000-8000-000000000001", "Noche de museos", "evento", "2026-09-20", "Apertura nocturna con recorrido guiado."],
+  ["e0e00000-0000-4000-8000-000000000002", "Lanzamiento de Octubre patrimonial", "campana", "2026-10-01", "Arranque de la campaña del mes."],
+  ["e0e00000-0000-4000-8000-000000000003", "Taller de patrimonio material", "evento", "2026-10-08", "Taller con vecinos del centro histórico."],
+  ["e0e00000-0000-4000-8000-000000000004", "Café con historia", "evento", "2026-10-18", "Recorrido inmersivo con café de origen."],
+  ["e0e00000-0000-4000-8000-000000000005", "Noche patrimonial", "evento", "2026-10-24", "Recorrido nocturno por patios y balcones."],
+  ["e0e00000-0000-4000-8000-000000000006", "Historias que no duermen", "evento", "2026-10-31", "Cierre de mes con recorrido temático."],
+];
+
+const CAMPAIGNS = [
+  ["ca000000-0000-4000-8000-000000000001", "Octubre patrimonial", "Abrir la casa a nuevos públicos con talleres y recorridos durante octubre.", "2026-10-01", "2026-10-31", "activa", "#B4552D", "octubre-patrimonial", "Cuatro eventos presenciales y once publicaciones en Instagram."],
+  ["ca000000-0000-4000-8000-000000000002", "Café con historia", "Convertir la cafetería en la puerta de entrada a la casa.", "2026-09-01", "2026-10-31", "finalizada", "#2F4A3E", "cafe-con-historia", "Recorrido corto con café incluido, todos los sábados."],
+  ["ca000000-0000-4000-8000-000000000003", "Navidad en la casa", "Temporada de recorridos nocturnos y mercado de oficios.", "2026-12-01", "2026-12-20", "planeada", "#C69A4B", "navidad-casa-gr", ""],
+];
+
+const ITEMS = [
+  ["c17e0000-0000-4000-8000-000000000001", "Reel: los balcones cumplen 101 años", "borrador", "Los balcones de la casa vuelven a mirar la carrera segunda. #Ibagué", "2026-11-06T16:00:00Z", "Grabar al atardecer.", null],
+  ["c17e0000-0000-4000-8000-000000000002", "Carrusel: oficios del centro de Ibagué", "en_revision", "Los oficios que sostienen el centro histórico: ebanistería, zapatería, encuadernación.", "2026-11-10T15:00:00Z", "Faltan dos fotos.", null],
+  ["c17e0000-0000-4000-8000-000000000003", "Café con historia de noviembre", "aprobado", "Sábado de Café con historia. Reserva tu recorrido.", "2026-11-15T16:00:00Z", "", null],
+  ["c17e0000-0000-4000-8000-000000000004", "Recorrido nocturno de fin de año", "idea", "La casa en diciembre: luces, patios y memoria.", "2026-12-05T23:00:00Z", "Aún sin fecha confirmada.", null],
+  ["c17e0000-0000-4000-8000-000000000005", "Chisme histórico: el reloj de la sala", "programado", "El reloj de la sala sigue marcando las horas de la casa.", "2026-11-20T22:00:00Z", "", null],
+  ["c17e0000-0000-4000-8000-000000000006", "Cierre de Octubre patrimonial", "publicado", "Gracias por acompañarnos en octubre.", "2026-10-31T23:00:00Z", "", "https://www.instagram.com/casagomezramirez/"],
+];
+
+function makeDaily(accountId, posts) {
+  const rows = [];
+  const start = new Date("2026-08-15T12:00:00Z");
+  const end = new Date("2026-10-31T12:00:00Z");
+  const series = [];
+  const total = Math.round((end - start) / 86400000) + 1;
+
+  for (let index = 0; index < total; index += 1) {
+    const date = new Date(start.getTime() + index * 86400000);
+    const key = date.toISOString().slice(0, 10);
+    const weekday = date.getUTCDay();
+    const weekend = weekday === 5 || weekday === 6 ? 1 : 0;
+    const special = ["2026-10-08", "2026-10-18", "2026-10-24", "2026-10-31"].includes(key);
+    const gained = (hash(`gain-${key}`) % 3) + weekend + (special ? 2 : 0);
+    const lost = hash(`loss-${key}`) % 11 === 0 ? 1 : 0;
+    const reach = 180 + (hash(`reach-${key}`) % 420) + (special ? 1600 : 0);
+    const views = 320 + (hash(`views-${key}`) % 850) + (special ? 1400 : 0);
+    const profileViews = 14 + (hash(`pv-${key}`) % 46) + (special ? 60 : 0);
+    series.push({ key, gained, lost, reach, views, profileViews });
+  }
+
+  const net = series.reduce((totalNet, row) => totalNet + row.gained - row.lost, 0);
+  let followers = 245 - net;
+
+  for (const row of series) {
+    followers += row.gained - row.lost;
+    rows.push({
+      id: `${accountId}-${row.key}`,
+      brand_id: BRAND_ID,
+      account_id: accountId,
+      metric_date: row.key,
+      followers,
+      following: 318,
+      posts_count:
+        62 + posts.filter((post) => post.published_at.slice(0, 10) <= row.key).length,
+      reach: row.reach,
+      profile_views: row.profileViews,
+      views: row.views,
+      followers_gained: row.gained,
+      followers_lost: row.lost,
+      total_interactions: Math.round(
+        row.reach * (0.035 + (hash(`int-${row.key}`) % 25) / 1000),
+      ),
+      created_at: iso(at(row.key)),
+    });
+  }
+
+  for (const [date, reach, views, profileViews, interactions] of [
+    ["2026-11-01", 640, 1180, 41, 38],
+    ["2026-11-02", 520, 960, 33, 29],
+  ]) {
+    rows.push({
+      id: `${accountId}-${date}`,
+      brand_id: BRAND_ID,
+      account_id: accountId,
+      metric_date: date,
+      followers: 245,
+      following: 318,
+      posts_count: 83,
+      reach,
+      profile_views: profileViews,
+      views,
+      followers_gained: 0,
+      followers_lost: 0,
+      total_interactions: interactions,
+      created_at: iso(at(date)),
+    });
+  }
+
+  return rows;
+}
+
 function makeSeed() {
-  const brand = { id: BRAND_ID, access_code_id: WORKSPACE_ID, name: "Café del Valle", slug: "cafe-del-valle", description: "Café de origen, historias de finca y momentos para compartir.", created_at: iso(day(-60)), updated_at: iso(day(-2)) };
-  const accountIg = "a0000000-0000-4000-8000-000000000001";
-  const accountTt = "a0000000-0000-4000-8000-000000000002";
-  const assetId = "c0000000-0000-4000-8000-000000000001";
-  const items = [
-    ["Idea", "idea", 3], ["Carrusel: del grano a la taza", "borrador", 1], ["Reel de cosecha", "en_revision", 2],
-    ["Origen Nariño", "aprobado", 4], ["Lanzamiento temporada", "programado", 6], ["Ritual de la mañana", "publicado", -3],
-  ].map(([title, status, offset], index) => ({ id: `d0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, brand_id: BRAND_ID, title, status, caption: `${title}: conoce el origen de nuestro café y acompáñanos en cada taza.`, scheduled_at: iso(day(offset)), campaign_id: "e0000000-0000-4000-8000-000000000001", notes: index === 2 ? "Revisar el cierre del video" : "", published_url: status === "publicado" ? "https://instagram.com/" : null, created_at: iso(day(-12 + index)), updated_at: iso(day(-1)) }));
-  const daily = Array.from({ length: 14 }, (_, index) => {
-    const metricDay = day(index - 13);
-    return [accountIg, accountTt].map((account_id, network) => ({ id: `${account_id}-${metricDay.toISOString().slice(0, 10)}`, brand_id: BRAND_ID, account_id, metric_date: metricDay.toISOString().slice(0, 10), followers: 4280 + index * (network ? 11 : 17), following: 320, posts_count: 86 + Math.floor(index / 4), reach: 1100 + ((index * 337 + network * 251) % 1700), profile_views: 170 + ((index * 41) % 130), views: 1900 + ((index * 593 + network * 340) % 3200) }));
-  }).flat();
+  const brand = {
+    id: BRAND_ID,
+    access_code_id: WORKSPACE_ID,
+    name: "Casa Gómez Ramírez",
+    slug: "casa-gr",
+    description: "Casa patrimonial de 1925 en el centro de Ibagué. Museo, café y memoria viva del Tolima.",
+    created_at: iso(day(-90)),
+    updated_at: iso(day(-2)),
+  };
+  const accountId = "50c14000-0000-4000-8000-000000000001";
+
+  const posts = POSTS.map(
+    ([published_at, captured_at, views, likes, comments, shares, saves, reach, media_type, media_product_type, caption], index) => ({
+      id: `90570000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      brand_id: BRAND_ID,
+      social_account_id: accountId,
+      external_post_id: `demo-${published_at.slice(0, 10)}`,
+      content_item_id: null,
+      published_at,
+      captured_at,
+      views,
+      likes,
+      comments,
+      shares,
+      saves,
+      reach,
+      media_type,
+      media_product_type,
+      caption,
+      permalink: "https://www.instagram.com/casagomezramirez/",
+    }),
+  );
+
+  const items = ITEMS.map(([id, title, status, caption, scheduled_at, notes, published_url], index) => ({
+    id,
+    brand_id: BRAND_ID,
+    campaign_id: index === 1 || index === 3 ? null : index === 2 ? "ca000000-0000-4000-8000-000000000002" : "ca000000-0000-4000-8000-000000000001",
+    title,
+    status,
+    caption,
+    scheduled_at,
+    created_by: "Equipo Casa GR",
+    notes,
+    published_url,
+    created_at: iso(day(-20 + index)),
+    updated_at: iso(day(-1)),
+  }));
+
   return {
     brands: [brand],
     brand_colors: [
-      { id: uuid(), brand_id: BRAND_ID, name: "Verde finca", hex: "#30483A", role: "primary", position: 0, created_at: iso(day(-50)) },
-      { id: uuid(), brand_id: BRAND_ID, name: "Crema", hex: "#F7EEE1", role: "neutral", position: 1, created_at: iso(day(-50)) },
-      { id: uuid(), brand_id: BRAND_ID, name: "Cosecha", hex: "#DF704E", role: "accent", position: 2, created_at: iso(day(-50)) },
+      { id: "c0100000-0000-4000-8000-000000000001", brand_id: BRAND_ID, name: "Verde patio", hex: "#2F4A3E", cmyk: "78 45 60 45", pantone: "350 C", role: "primary", usage_notes: "Color base de la casa. Fondos, titulares y piezas de patrimonio.", position: 0, created_at: iso(day(-80)) },
+      { id: "c0100000-0000-4000-8000-000000000002", brand_id: BRAND_ID, name: "Crema cal", hex: "#F3EBDD", cmyk: "4 6 13 0", pantone: "7527 C", role: "neutral", usage_notes: "Fondo principal de las piezas. Deja respirar la fotografía.", position: 1, created_at: iso(day(-80)) },
+      { id: "c0100000-0000-4000-8000-000000000003", brand_id: BRAND_ID, name: "Terracota", hex: "#B4552D", cmyk: "30 76 100 12", pantone: "173 C", role: "accent", usage_notes: "Acentos, botones y datos destacados del mes.", position: 2, created_at: iso(day(-80)) },
+      { id: "c0100000-0000-4000-8000-000000000004", brand_id: BRAND_ID, name: "Oro viejo", hex: "#C69A4B", cmyk: "22 37 78 3", pantone: "7402 C", role: "support", usage_notes: "Detalles finos: líneas, sellos y numeración de épocas.", position: 3, created_at: iso(day(-80)) },
+      { id: "c0100000-0000-4000-8000-000000000005", brand_id: BRAND_ID, name: "Tinta", hex: "#1E2420", cmyk: "72 60 64 70", pantone: "Black 6 C", role: "support", usage_notes: "Texto principal sobre crema.", position: 4, created_at: iso(day(-80)) },
     ],
-    brand_fonts: [{ id: uuid(), brand_id: BRAND_ID, family: "Jost", role: "body", weights: [400, 600, 700], position: 0, created_at: iso(day(-50)), storage_path: null }],
+    brand_fonts: [
+      { id: "f0170000-0000-4000-8000-000000000001", brand_id: BRAND_ID, family: "Cormorant Garamond", role: "title", weights: [400, 600, 700], storage_path: null, license_notes: "Google Fonts, licencia OFL.", position: 0, created_at: iso(day(-80)) },
+      { id: "f0170000-0000-4000-8000-000000000002", brand_id: BRAND_ID, family: "Inter", role: "body", weights: [400, 500, 600], storage_path: null, license_notes: "Google Fonts, licencia OFL.", position: 1, created_at: iso(day(-80)) },
+    ],
     brand_logos: [
-      { id: "f0000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, variant: "Wordmark principal", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000004", min_size_px: 150, clear_space_notes: "Usar sobre fondos claros y dejar aire alrededor.", position: 0, created_at: iso(day(-50)) },
-      { id: "f0000000-0000-4000-8000-000000000002", brand_id: BRAND_ID, variant: "Isotipo", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000005", min_size_px: 28, clear_space_notes: "Para avatares, sellos y espacios cuadrados.", position: 1, created_at: iso(day(-50)) },
+      { id: "10600000-0000-4000-8000-000000000001", brand_id: BRAND_ID, variant: "Wordmark principal", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000004", min_size_px: 160, clear_space_notes: "Dejar libre el ancho de la letra C alrededor del logo.", position: 0, created_at: iso(day(-80)) },
+      { id: "10600000-0000-4000-8000-000000000002", brand_id: BRAND_ID, variant: "Monograma GR", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000005", min_size_px: 40, clear_space_notes: "Para avatares y sellos de redes sociales.", position: 1, created_at: iso(day(-80)) },
     ],
-    brand_guidelines: [{ id: uuid(), brand_id: BRAND_ID, section: "voz", title: "Nuestra voz", body_md: "Cercana, curiosa y orgullosa de su origen.\n\n**Hablamos** de personas, territorio y sabor con calidez.", position: 0, created_at: iso(day(-45)) }, { id: uuid(), brand_id: BRAND_ID, section: "hacer", title: "Sí hacemos", body_md: "- Nombramos las fincas y a quienes cultivan.\n- Compartimos datos de origen claros.", position: 1, created_at: iso(day(-45)) }],
-    media_assets: [{ id: assetId, brand_id: BRAND_ID, name: "campana-origen.svg", original_path: `${BRAND_ID}/media/demo-campana.svg`, thumb_path: `${BRAND_ID}/thumbs/demo-campana.svg`, mime_type: "image/svg+xml", size_bytes: new Blob([DEMO_ART]).size, width: 1200, height: 1500, duration_seconds: null, status: "en_uso", folder: "Campaña de origen", tags: ["origen", "café", "campaña"], created_at: iso(day(-4)), updated_at: iso(day(-1)) }, ...DEMO_VISUALS.map(demoVisualRow)],
-    media_comments: [{ id: uuid(), brand_id: BRAND_ID, asset_id: assetId, author_name: "Valentina", body: "El tono del fondo funciona muy bien con la paleta.", parent_id: null, pos_x: 0.69, pos_y: 0.35, video_time_seconds: null, resolved: false, created_at: iso(day(-2)) }, { id: uuid(), brand_id: BRAND_ID, asset_id: assetId, author_name: "Mateo", body: "De acuerdo, lo dejamos así.", parent_id: null, pos_x: null, pos_y: null, video_time_seconds: null, resolved: true, created_at: iso(day(-1)) }],
-    caption_bank: [{ id: uuid(), brand_id: BRAND_ID, title: "Desde la finca", body: "Cada taza guarda el cuidado de una finca y el carácter de nuestra tierra. ¿Ya probaste café de origen?", platform: "instagram", status: "aprobado", tags: ["origen", "marca"], created_at: iso(day(-9)) }, { id: uuid(), brand_id: BRAND_ID, title: "Pausa de café", body: "Haz una pausa. El café de hoy viene de muy cerca.", platform: "tiktok", status: "borrador", tags: ["rutina"], created_at: iso(day(-3)) }],
-    hashtag_sets: [{ id: uuid(), brand_id: BRAND_ID, name: "Origen colombiano", tags: ["#CafeColombiano", "#CafeDeOrigen", "#Nariño"], platform: "instagram", status: "aprobado", created_at: iso(day(-8)) }],
-    cta_bank: [{ id: uuid(), brand_id: BRAND_ID, text: "Descubre tu próximo café favorito", platform: "instagram", status: "aprobado", created_at: iso(day(-7)) }],
+    brand_guidelines: [
+      { id: "90100000-0000-4000-8000-000000000001", brand_id: BRAND_ID, section: "voz", title: "Nuestra voz", body_md: "Cercana, curiosa y orgullosa de Ibagué.\n\nHablamos de la casa como lo que es: **la casa de una familia** que abre sus puertas. Nunca como un museo frío ni como un restaurante más.", position: 0, created_at: iso(day(-80)) },
+      { id: "90100000-0000-4000-8000-000000000002", brand_id: BRAND_ID, section: "tono", title: "Nuestro tono", body_md: "Cálido y pausado. Contamos con fechas y nombres, sin grandilocuencia.\n\n- Frases cortas.\n- Una idea por pieza.\n- Si hay un dato histórico, va con su año.", position: 1, created_at: iso(day(-80)) },
+      { id: "90100000-0000-4000-8000-000000000003", brand_id: BRAND_ID, section: "hacer", title: "Sí hacemos", body_md: "- Nombrar a Samuel Gómez Ramírez y a la familia.\n- Contar el año (1925) y el lugar (Cra 2 #10-36).\n- Invitar a venir, a tomar café, a recorrer.", position: 2, created_at: iso(day(-80)) },
+      { id: "90100000-0000-4000-8000-000000000004", brand_id: BRAND_ID, section: "no_hacer", title: "No hacemos", body_md: "- No inventamos historias ni fechas.\n- No usamos lenguaje corporativo.\n- No prometemos experiencias que la casa no ofrece.", position: 3, created_at: iso(day(-80)) },
+    ],
+    media_assets: [
+      { id: "c0000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, name: "campana-octubre.svg", original_path: `${BRAND_ID}/media/demo-campana.svg`, thumb_path: `${BRAND_ID}/thumbs/demo-campana.svg`, mime_type: "image/svg+xml", size_bytes: new Blob([DEMO_ART]).size, width: 1200, height: 1500, duration_seconds: null, status: "en_uso", folder: "Octubre patrimonial", tags: ["campaña", "patrimonio", "octubre"], created_at: iso(day(-40)), updated_at: iso(day(-1)) },
+      ...DEMO_VISUALS.map(demoVisualRow),
+    ],
+    media_comments: [
+      { id: uuid(), brand_id: BRAND_ID, asset_id: "c0000000-0000-4000-8000-000000000001", author_name: "Equipo Casa GR", body: "La foto del patio funciona muy bien con la paleta.", parent_id: null, pos_x: 0.65, pos_y: 0.35, video_time_seconds: null, resolved: false, created_at: iso(day(-2)) },
+    ],
+    caption_bank: [
+      { id: "ba000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, platform: "instagram", title: "La casa de 1925", body: "En 1925 esta casa ya miraba a la calle. Hoy abre sus puertas para que la memoria de Ibagué siga respirando. 🗝️", status: "aprobado", uses: 4, tags: ["patrimonio", "historia", "ibague"], created_at: iso(day(-30)) },
+      { id: "ba000000-0000-4000-8000-000000000002", brand_id: BRAND_ID, platform: "instagram", title: "Café en el patio", body: "Un café de origen, un patio con historia y la tarde entera por delante.", status: "aprobado", uses: 6, tags: ["cafe", "patio", "plan"], created_at: iso(day(-24)) },
+      { id: "ba000000-0000-4000-8000-000000000003", brand_id: BRAND_ID, platform: "instagram", title: "Chisme histórico", body: "Chisme histórico: no todo lo que guarda esta casa está en los libros.", status: "aprobado", uses: 3, tags: ["historia", "serie"], created_at: iso(day(-18)) },
+    ],
+    hashtag_sets: [
+      { id: "4a000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, name: "Patrimonio Ibagué", tags: ["#CasaGómezRamírez", "#Ibagué", "#Patrimonio", "#CentroHistórico"], platform: "instagram", status: "aprobado", created_at: iso(day(-28)) },
+      { id: "4a000000-0000-4000-8000-000000000002", brand_id: BRAND_ID, name: "Café y planes", tags: ["#CaféDeOrigen", "#Tolima", "#PlanEnIbagué", "#CaféConHistoria"], platform: "instagram", status: "aprobado", created_at: iso(day(-20)) },
+    ],
+    cta_bank: [
+      { id: "c7a00000-0000-4000-8000-000000000001", brand_id: BRAND_ID, text: "Reserva tu recorrido por la casa.", platform: "instagram", status: "aprobado", created_at: iso(day(-26)) },
+      { id: "c7a00000-0000-4000-8000-000000000002", brand_id: BRAND_ID, text: "Ven a tomar café en el patio.", platform: "instagram", status: "aprobado", created_at: iso(day(-22)) },
+      { id: "c7a00000-0000-4000-8000-000000000003", brand_id: BRAND_ID, text: "Escríbenos para agendar tu visita.", platform: "instagram", status: "aprobado", created_at: iso(day(-14)) },
+    ],
     network_templates: [
-      { id: uuid(), brand_id: null, platform: "instagram", name: "Post vertical", width: 1080, height: 1350, max_caption: 2200, max_hashtags: 30, created_at: iso(day(-30)) },
-      { id: uuid(), brand_id: null, platform: "instagram", name: "Reel", width: 1080, height: 1920, max_caption: 2200, max_hashtags: 30, created_at: iso(day(-30)) },
-      { id: uuid(), brand_id: null, platform: "tiktok", name: "Video vertical", width: 1080, height: 1920, max_caption: 2200, max_hashtags: 10, created_at: iso(day(-30)) },
+      { id: "7e000000-0000-4000-8000-000000000001", brand_id: null, platform: "instagram", template_key: "feed-square", name: "Publicación cuadrada", width: 1080, height: 1080, max_caption: 2200, max_hashtags: 30, notes: "Proporción 1:1", created_at: iso(day(-90)) },
+      { id: "7e000000-0000-4000-8000-000000000002", brand_id: null, platform: "instagram", template_key: "feed-portrait", name: "Publicación vertical", width: 1080, height: 1350, max_caption: 2200, max_hashtags: 30, notes: "Proporción 4:5", created_at: iso(day(-90)) },
+      { id: "7e000000-0000-4000-8000-000000000003", brand_id: null, platform: "instagram", template_key: "story", name: "Historia / Reel", width: 1080, height: 1920, max_caption: 2200, max_hashtags: 30, notes: "Proporción 9:16", created_at: iso(day(-90)) },
     ],
-    campaigns: [{ id: "e0000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, name: "Historias de origen", objective: "Dar a conocer a las fincas productoras", start_date: day(-8).toISOString().slice(0, 10), end_date: day(24).toISOString().slice(0, 10), status: "activa", color: "#DF704E", notes: "Temporada de cosecha", created_at: iso(day(-8)) }],
+    campaigns: CAMPAIGNS.map(([id, name, objective, start_date, end_date, status, color, utm_campaign, notes]) => ({ id, brand_id: BRAND_ID, name, objective, start_date, end_date, status, color, utm_campaign, notes, created_at: iso(day(-30)) })),
+    brand_events: EVENTS.map(([id, title, kind, event_date, notes]) => ({ id, brand_id: BRAND_ID, title, kind, event_date, notes, created_at: iso(day(-30)) })),
     content_items: items,
-    content_item_targets: items.flatMap((item, index) => [{ id: uuid(), brand_id: BRAND_ID, content_item_id: item.id, platform: "instagram", template_id: null, caption_override: "" }, ...(index % 2 ? [{ id: uuid(), brand_id: BRAND_ID, content_item_id: item.id, platform: "tiktok", template_id: null, caption_override: "" }] : [])]),
-    content_item_assets: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[3].id, asset_id: assetId, position: 0 }],
-    content_status_history: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[2].id, from_status: "borrador", to_status: "en_revision", changed_by: "Valentina", comment: "Lista para revisión", created_at: iso(day(-2)) }],
-    content_comments: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[2].id, author_name: "Mateo", body: "¿Podemos mostrar la finca al inicio?", created_at: iso(day(-1)) }],
-    reminders: [{ id: uuid(), brand_id: BRAND_ID, title: "Publicar historia de cosecha", notes: "Confirmar hora con el equipo", remind_at: iso(day(1)), repeat_rule: "none", kind: "tarea", done: false, created_at: iso(day(-2)) }],
-    social_accounts: [{ id: accountIg, brand_id: BRAND_ID, platform: "instagram", handle: "cafedelvalle", display_name: "Café del Valle", status: "demo", created_at: iso(day(-30)) }, { id: accountTt, brand_id: BRAND_ID, platform: "tiktok", handle: "cafedelvalle.co", display_name: "Café del Valle", status: "demo", created_at: iso(day(-29)) }],
-    account_metrics_daily: daily,
-    post_metrics_snapshots: [0, 1, 2, 3].map((index) => ({ id: uuid(), brand_id: BRAND_ID, social_account_id: index % 2 ? accountTt : accountIg, content_item_id: items[5 - index].id, external_post_id: `demo-${index + 1}`, published_at: iso(new Date(day(-2 - index * 3).setHours(8 + index * 2))), captured_at: iso(day(-1)), views: 1900 + index * 500, likes: 110 + index * 31, comments: 8 + index * 2, shares: 12 + index * 4, saves: 18 + index * 5, reach: 1200 + index * 430 })),
+    content_item_targets: items.map((item, index) => ({
+      id: `7a000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      brand_id: BRAND_ID,
+      content_item_id: item.id,
+      platform: "instagram",
+      template_id: "7e000000-0000-4000-8000-000000000002",
+      caption_override: "",
+    })),
+    content_item_assets: [{ brand_id: BRAND_ID, content_item_id: items[3].id, asset_id: "c0000000-0000-4000-8000-000000000001", position: 0 }],
+    content_status_history: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[1].id, from_status: "borrador", to_status: "en_revision", changed_by: "Equipo Casa GR", comment: "Lista para revisión", created_at: iso(day(-2)) }],
+    content_comments: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[1].id, author_name: "Equipo Casa GR", body: "¿Podemos abrir con la foto del patio?", created_at: iso(day(-1)) }],
+    reminders: [
+      { id: "ae000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, title: "Publicar el reel de los balcones", notes: "Revisar el audio antes de programar.", remind_at: "2026-11-06T13:00:00Z", repeat_rule: "none", kind: "tarea", content_item_id: items[0].id, campaign_id: null, done: false, created_at: iso(day(-3)) },
+      { id: "ae000000-0000-4000-8000-000000000002", brand_id: BRAND_ID, title: "Confirmar fecha del mercado de oficios", notes: "Hablar con la familia para cerrar el calendario de diciembre.", remind_at: "2026-11-12T15:00:00Z", repeat_rule: "none", kind: "tarea", content_item_id: null, campaign_id: "ca000000-0000-4000-8000-000000000003", done: false, created_at: iso(day(-2)) },
+    ],
+    social_accounts: [
+      { id: accountId, brand_id: BRAND_ID, platform: "instagram", handle: "casagomezramirez", display_name: "Casa Gómez Ramírez", status: "demo", external_id: null, created_at: iso(day(-90)) },
+    ],
+    account_metrics_daily: makeDaily(accountId, posts),
+    post_metrics_snapshots: posts,
+    reports: [
+      { id: "4e000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, title: "Reporte mensual · Septiembre 2026", period_start: "2026-09-01", period_end: "2026-09-30", generated_by: "Equipo Casa GR", notes: "Mes de posicionamiento: la serie de chismes históricos fue la que más alcance trajo.", config: { source: "synthetic" }, created_at: iso(day(-32)) },
+    ],
   };
 }
 
@@ -80,17 +288,6 @@ function readDatabase() {
 export async function initializeLocalData() {
   let db = readDatabase();
   if (!db) { db = makeSeed(); localStorage.setItem(DATABASE_KEY, JSON.stringify(db)); }
-  if (!db.local_demo_fixtures_version) {
-    for (const visual of DEMO_VISUALS) if (!db.media_assets.some((asset) => asset.id === visual.id)) db.media_assets.push(demoVisualRow(visual));
-    const logos = [
-      { id: "f0000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, variant: "Wordmark principal", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000004", min_size_px: 150, clear_space_notes: "Usar sobre fondos claros y dejar aire alrededor.", position: 0, created_at: iso(day(-50)) },
-      { id: "f0000000-0000-4000-8000-000000000002", brand_id: BRAND_ID, variant: "Isotipo", storage_path: null, asset_id: "c0000000-0000-4000-8000-000000000005", min_size_px: 28, clear_space_notes: "Para avatares, sellos y espacios cuadrados.", position: 1, created_at: iso(day(-50)) },
-    ];
-    db.brand_logos ??= [];
-    for (const logo of logos) if (!db.brand_logos.some((row) => row.id === logo.id)) db.brand_logos.push(logo);
-    db.local_demo_fixtures_version = 1;
-    saveDatabase(db);
-  }
   await putFile(`${BRAND_ID}/media/demo-campana.svg`, new Blob([DEMO_ART], { type: "image/svg+xml" }));
   await putFile(`${BRAND_ID}/thumbs/demo-campana.svg`, new Blob([DEMO_ART], { type: "image/svg+xml" }));
   const activeVisualIds = new Set(db.media_assets.filter((asset) => asset.brand_id === BRAND_ID).map((asset) => asset.id));
