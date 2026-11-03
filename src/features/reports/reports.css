@@ -273,10 +273,10 @@
 .reports__table-head,
 .reports__table-row {
   display: grid;
-  grid-template-columns: 62px 68px minmax(220px, 1fr) 74px 88px 58px;
+  grid-template-columns: 62px 46px 84px minmax(220px, 1fr) 74px 88px 58px;
   gap: var(--space-2);
   align-items: start;
-  min-width: 620px;
+  min-width: 680px;
 }
 .reports__table-head {
   padding-bottom: var(--space-2);
@@ -390,3 +390,36 @@
     transition: none;
   }
 }
+
+/* Network summary cards + inline bars used inside the collapsible sections. */
+.reports__networks { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:var(--space-3); }
+.reports__network { display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-4); background:var(--color-surface); border:1px solid var(--color-border); border-top:3px solid var(--network-color,var(--color-primary)); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); }
+.reports__network header { display:flex; align-items:center; justify-content:space-between; gap:var(--space-2); color:var(--color-text-3); font-size:var(--text-xs); }
+.reports__badge { padding:2px 8px; color:#fff; background:var(--network-color,var(--color-primary)); border-radius:var(--radius-full); font-size:var(--text-xs); font-weight:650; letter-spacing:.05em; }
+.reports__network-followers { display:flex; flex-direction:column; gap:1px; }
+.reports__network-followers strong { font-family:var(--font-display); font-size:clamp(1.8rem,3vw,2.4rem); line-height:1.05; }
+.reports__network-followers span { color:var(--color-text-3); font-size:var(--text-xs); }
+.reports__network ul { display:flex; flex-direction:column; gap:var(--space-1); margin:0; padding:var(--space-2) 0 0; border-top:1px solid var(--color-border); list-style:none; }
+.reports__network li { display:flex; justify-content:space-between; gap:var(--space-2); color:var(--color-text-2); font-size:var(--text-sm); }
+.reports__network li strong { color:var(--color-text); font-variant-numeric:tabular-nums; }
+.reports__network--total { background:var(--color-surface-2); border-top-color:var(--color-text-3); }
+.reports .is-up { color:var(--color-success); }
+.reports .is-down { color:var(--color-danger); }
+.reports__network .reports__spark { margin-top:0; }
+
+.reports__bars, .reports__source-list { display:flex; flex-direction:column; gap:var(--space-2); margin:0; padding:0; list-style:none; }
+.reports__bars li, .reports__source-list li { display:grid; grid-template-columns:minmax(104px,auto) minmax(60px,1fr) 64px; align-items:center; gap:var(--space-2); color:var(--color-text-2); font-size:var(--text-sm); }
+.reports__bars li strong, .reports__source-list li strong { text-align:right; color:var(--color-text); font-size:var(--text-sm); font-variant-numeric:tabular-nums; }
+.reports__bar-track { height:8px; overflow:hidden; background:var(--color-surface-2); border-radius:var(--radius-full); }
+.reports__bar-fill { height:100%; background:var(--color-primary); border-radius:var(--radius-full); }
+
+.reports__chips { display:flex; flex-wrap:wrap; gap:var(--space-2); margin:0; padding:0; list-style:none; }
+.reports__chips li { padding:4px 10px; color:var(--color-text-2); background:var(--color-surface-2); border:1px solid var(--color-border); border-radius:var(--radius-full); font-size:var(--text-xs); }
+
+.reports__demography { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:var(--space-4); }
+.reports__demography > div { display:flex; flex-direction:column; gap:3px; }
+.reports__demography span { color:var(--color-text-3); font-size:var(--text-xs); letter-spacing:.06em; text-transform:uppercase; }
+.reports__demography strong { font-family:var(--font-display); font-size:var(--text-xl); }
+.reports__demography small { color:var(--color-text-2); font-size:var(--text-xs); }
+.reports__demography-ages > div { display:grid; grid-template-columns:52px minmax(0,1fr) 58px; gap:var(--space-2); align-items:center; margin-top:var(--space-2); }
+.reports__demography-ages strong { font-family:var(--font-body); font-size:var(--text-xs); text-align:right; font-variant-numeric:tabular-nums; }

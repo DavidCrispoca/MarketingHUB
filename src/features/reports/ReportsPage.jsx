@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { useOutletContext } from "react-router-dom";
 import { formatInTimeZone } from "date-fns-tz";
+import Section from "../../components/Section.jsx";
 import { useI18n } from "../../i18n/index.jsx";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import {
@@ -10,8 +11,9 @@ import {
   dayLabel,
   formatNumber,
   formatPercent,
+  formatShare,
   monthLabel,
-  percentChange,
+  PLATFORM_COLOR,
   shiftMonthKey,
   useReports,
   useSaveReport,
@@ -63,6 +65,90 @@ function Sparkline({ rows, color }) {
   );
 }
 
+function Delta({ value, label }) {
+  if (value === null || value === undefined) return <small>{label ? `${label} · ` : ""}sin mes anterior</small>;
+  return (
+    <small className={value >= 0 ? "is-up" : "is-down"}>
+      {formatPercent(value)} {label}
+    </small>
+  );
+}
+
+function NetworkKpis({ network }) {
+  return (
+    <div className="reports__kpis">
+      <article>
+        <span>{network.label} · visualizaciones</span>
+        <strong>{formatNumber(network.views)}</strong>
+        <Delta value={network.delta?.views} label="vs. mes anterior" />
+      </article>
+      <article>
+        <span>Alcance</span>
+        <strong>{formatNumber(network.reach)}</strong>
+        <Delta value={network.delta?.reach} label="vs. mes anterior" />
+      </article>
+      <article>
+        <span>Interacciones</span>
+        <strong>{formatNumber(network.interactions)}</strong>
+        <Delta value={network.delta?.interactions} label="vs. mes anterior" />
+      </article>
+      <article>
+        <span>Seguidores nuevos</span>
+        <strong>+{formatNumber(network.followersGained)}</strong>
+        <small>
+          {formatNumber(network.followersLost)} perdidos · cierre {formatNumber(network.followers)}
+        </small>
+      </article>
+      <article>
+        <span>Visitas al perfil</span>
+        <strong>{formatNumber(network.profileViews)}</strong>
+        <Delta value={network.delta?.profileViews} label="vs. mes anterior" />
+      </article>
+      <article>
+        <span>Clics al enlace</span>
+        <strong>{formatNumber(network.linkClicks)}</strong>
+        <small>{formatNumber(network.posts)} publicaciones</small>
+      </article>
+    </div>
+  );
+}
+
+function PostsTable({ posts }) {
+  const { t } = useI18n();
+  if (!posts.length) return <p className="reports__empty">{t("reports.topPosts.empty")}</p>;
+  return (
+    <div className="reports__table" role="table" aria-label={t("reports.topPosts")}>
+      <div className="reports__table-head" role="row">
+        <span role="columnheader">{t("reports.table.date")}</span>
+        <span role="columnheader">{t("reports.table.network")}</span>
+        <span role="columnheader">{t("reports.table.type")}</span>
+        <span role="columnheader">{t("reports.table.caption")}</span>
+        <span role="columnheader">{t("reports.table.views")}</span>
+        <span role="columnheader">{t("reports.table.interactions")}</span>
+        <span role="columnheader">{t("reports.table.rate")}</span>
+      </div>
+      {posts.map((post) => (
+        <div className="reports__table-row" role="row" key={`${post.platform}-${post.id}`}>
+          <span role="cell">{dayLabel(post.day)}</span>
+          <span role="cell">
+            <span
+              className="reports__badge"
+              style={{ "--network-color": PLATFORM_COLOR[post.platform] ?? "var(--color-primary)" }}
+            >
+              {post.platform === "instagram" ? "IG" : "TT"}
+            </span>
+          </span>
+          <span role="cell" className="reports__type">{post.type}</span>
+          <span role="cell" className="reports__caption">{post.caption || t("reports.table.noCaption")}</span>
+          <span role="cell">{formatNumber(post.views)}</span>
+          <span role="cell">{formatNumber(post.interactions)}</span>
+          <span role="cell">{formatPercent(post.engagementRate)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ReportsPage() {
   const { t } = useI18n();
   const brand = useOutletContext();
@@ -80,6 +166,7 @@ export default function ReportsPage() {
     if (!data) return [];
     const set = new Set();
     for (const row of data.daily) set.add(row.metric_date.slice(0, 7));
+    for (const row of data.insights) set.add(String(row.period_start).slice(0, 7));
     for (const post of data.posts) {
       if (post.published_at) {
         set.add(formatInTimeZone(new Date(post.published_at), ZONE, "yyyy-MM"));
@@ -115,7 +202,9 @@ export default function ReportsPage() {
     setError("");
     setNotice("");
     try {
-      const document = <MonthlyReportPdf report={{ ...target, notes: text }} />;
+      const document = (
+        <MonthlyReportPdf report={{ ...target, notes: text, preparedBy: grant?.holder_name ?? "" }} />
+      );
       const blob = await pdf(document).toBlob();
       download(blob, `reporte-${brand.slug}-${target.monthKey}.pdf`);
 
@@ -132,8 +221,9 @@ export default function ReportsPage() {
             generated_by: grant?.holder_name ?? "",
             notes: text,
             config: {
-              source: data.accounts.find((row) => row.id === target.account?.id)?.status ?? "demo",
+              source: target.isDemo ? "demo" : "connected",
               month: target.monthKey,
+              networks: target.networks.map((network) => network.platform),
             },
           },
         });
@@ -160,10 +250,13 @@ export default function ReportsPage() {
     );
   }
 
-  const primary = report.palette.primary;
-  const accent = report.palette.accent;
-  const followersDelta = report.followersOpening ? report.net / report.followersOpening : null;
-  const isDemo = data.accounts.some((account) => account.status === "demo");
+  const { instagram, tiktok, instagramDaily } = report;
+  const peak = instagramDaily.length
+    ? Math.max(...instagramDaily.map((row) => Number(row.followers) || 0))
+    : 0;
+  const floor = instagramDaily.length
+    ? Math.min(...instagramDaily.map((row) => Number(row.followers) || 0))
+    : 0;
 
   return (
     <section className="reports">
@@ -194,7 +287,7 @@ export default function ReportsPage() {
           <button
             className="btn btn--primary"
             type="button"
-            disabled={Boolean(busyMonth) || !report.posts}
+            disabled={Boolean(busyMonth) || !report.networks.length}
             onClick={() => generate()}
           >
             {busyMonth ? t("reports.generating") : t("reports.download")}
@@ -202,7 +295,7 @@ export default function ReportsPage() {
         </div>
       </header>
 
-      {isDemo ? (
+      {report.isDemo ? (
         <p className="reports__demo" title={t("reports.demo.title")}>
           {t("reports.demo")}
         </p>
@@ -211,178 +304,288 @@ export default function ReportsPage() {
       {error ? <p className="reports__error" role="alert">{error}</p> : null}
       {notice ? <p className="reports__notice" role="status">{notice}</p> : null}
 
-      <section className="reports__hero" style={{ "--report-primary": primary, "--report-accent": accent }}>
-        <div className="reports__hero-main">
-          <span>{t("reports.kpi.followers")}</span>
-          <strong>{formatNumber(report.followersClosing)}</strong>
-          <small>
-            {report.net >= 0 ? "+" : ""}
-            {formatNumber(report.net)} {t("reports.kpi.netSuffix")} · {formatPercent(followersDelta)}
-          </small>
-          <Sparkline rows={report.daily} color={primary} />
-        </div>
-        <div className="reports__hero-rows">
-          <div>
-            <span>{t("reports.kpi.gained")}</span>
-            <strong>{formatNumber(report.gained)}</strong>
-          </div>
-          <div>
-            <span>{t("reports.kpi.lost")}</span>
-            <strong>{formatNumber(report.lost)}</strong>
-          </div>
-          <div>
-            <span>{t("reports.kpi.posts")}</span>
-            <strong>{formatNumber(report.posts)}</strong>
-          </div>
-        </div>
-      </section>
-
-      <div className="reports__kpis">
-        <article>
-          <span>{t("reports.kpi.reach")}</span>
-          <strong>{formatNumber(report.reach)}</strong>
-          <small>
-            {formatPercent(percentChange(report.reach, report.previous.reach))} {t("reports.vsPrevious")}
-          </small>
-        </article>
-        <article>
-          <span>{t("reports.kpi.views")}</span>
-          <strong>{formatNumber(report.views)}</strong>
-          <small>
-            {formatPercent(percentChange(report.views, report.previous.views))} {t("reports.vsPrevious")}
-          </small>
-        </article>
-        <article>
-          <span>{t("reports.kpi.interactions")}</span>
-          <strong>{formatNumber(report.interactions)}</strong>
-          <small>
-            {formatPercent(percentChange(report.interactions, report.previous.interactions))}{" "}
-            {t("reports.vsPrevious")}
-          </small>
-        </article>
-        <article>
-          <span>{t("reports.kpi.profileViews")}</span>
-          <strong>{formatNumber(report.profileViews)}</strong>
-          <small>
-            {formatPercent(percentChange(report.profileViews, report.previous.profileViews))}{" "}
-            {t("reports.vsPrevious")}
-          </small>
-        </article>
-      </div>
-
-      <div className="reports__grid">
-        <section className="reports__panel">
-          <header>
-            <h3>{t("reports.evolution")}</h3>
-            <span>
-              {formatNumber(report.followersOpening)} → {formatNumber(report.followersClosing)}
-            </span>
-          </header>
-          {report.daily.length > 1 ? (
-            <div
-              className="reports__chart"
-              role="img"
-              aria-label={t("reports.evolution.aria")}
-              style={{ "--report-accent": primary }}
-            >
-              {report.daily.map((row) => {
-                const peak = Math.max(...report.daily.map((item) => Number(item.followers) || 0));
-                const floor = Math.min(...report.daily.map((item) => Number(item.followers) || 0));
-                const span = peak - floor || 1;
-                const height = 18 + ((Number(row.followers) - floor) / span) * 82;
-                return (
-                  <div className="reports__chart-col" key={row.metric_date} title={`${row.metric_date}: ${row.followers}`}>
-                    <div className="reports__chart-bar" style={{ height: `${height}%` }} />
-                  </div>
-                );
-              })}
+      <div className="reports__networks">
+        {report.networks.map((network) => (
+          <article
+            className="reports__network"
+            key={network.platform}
+            style={{ "--network-color": PLATFORM_COLOR[network.platform] ?? "var(--color-primary)" }}
+          >
+            <header>
+              <span className="reports__badge">{network.label}</span>
+              <span>@{network.handle}</span>
+            </header>
+            <div className="reports__network-followers">
+              <strong>{formatNumber(network.followers)}</strong>
+              <span>{t("reports.kpi.followers")}</span>
             </div>
-          ) : (
-            <p className="reports__empty">{t("reports.evolution.empty")}</p>
-          )}
-          <p className="reports__coverage">
-            {t("reports.coverage", {
-              start: dayLabel(report.coverage.start, { day: "numeric", month: "short" }),
-              end: dayLabel(report.coverage.end, { day: "numeric", month: "short" }),
-              days: report.coverage.days,
-              total: report.period.days,
-            })}
-            {report.complete ? "" : ` ${t("reports.coverage.partial")}`}
-          </p>
-        </section>
-
-        <section className="reports__panel">
-          <header>
-            <h3>{t("reports.activity")}</h3>
-            <span>{report.events.length + report.campaigns.length}</span>
-          </header>
-          {report.events.length ? (
-            <ul className="reports__events">
-              {report.events.map((event) => (
-                <li key={event.id}>
-                  <time dateTime={event.event_date}>{dayLabel(event.event_date)}</time>
-                  <div>
-                    <strong>{event.title}</strong>
-                    <span>{KIND_LABEL[event.kind] ?? event.kind}</span>
-                  </div>
-                </li>
-              ))}
+            <Delta value={network.delta?.followers} label={t("reports.vsPrevious")} />
+            <ul>
+              <li>
+                <span>{t("reports.kpi.gained")}</span>
+                <strong>+{formatNumber(network.followersGained)}</strong>
+              </li>
+              <li>
+                <span>{t("reports.kpi.views")}</span>
+                <strong>{formatNumber(network.views)}</strong>
+              </li>
+              <li>
+                <span>{t("reports.kpi.interactions")}</span>
+                <strong>{formatNumber(network.interactions)}</strong>
+              </li>
             </ul>
-          ) : (
-            <p className="reports__empty">{t("reports.activity.empty")}</p>
-          )}
-          {report.campaigns.length ? (
-            <div className="reports__campaigns">
-              {report.campaigns.map((campaign) => (
-                <span key={campaign.id} style={{ "--campaign-color": campaign.color || accent }}>
-                  {campaign.name}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </section>
+            {network.platform === "instagram" && instagramDaily.length > 1 ? (
+              <Sparkline rows={instagramDaily} color="var(--network-color)" />
+            ) : null}
+          </article>
+        ))}
+
+        <article className="reports__network reports__network--total">
+          <header>
+            <span className="reports__badge">{t("reports.total")}</span>
+            <span>{capitalize(monthLabel(activeMonth))}</span>
+          </header>
+          <div className="reports__network-followers">
+            <strong>{formatNumber(report.totalViews)}</strong>
+            <span>{t("reports.kpi.views")}</span>
+          </div>
+          <ul>
+            <li>
+              <span>{t("reports.total.followers")}</span>
+              <strong>+{formatNumber(report.totalFollowersGained)}</strong>
+            </li>
+            <li>
+              <span>{t("reports.kpi.interactions")}</span>
+              <strong>{formatNumber(report.totalInteractions)}</strong>
+            </li>
+            <li>
+              <span>{t("reports.kpi.posts")}</span>
+              <strong>{formatNumber(report.totalPosts)}</strong>
+            </li>
+          </ul>
+        </article>
       </div>
 
-      <section className="reports__panel">
-        <header>
-          <h3>{t("reports.topPosts")}</h3>
-          <span>{t("reports.topPosts.hint")}</span>
-        </header>
-        {report.topPosts.length ? (
-          <div className="reports__table" role="table" aria-label={t("reports.topPosts")}>
-            <div className="reports__table-head" role="row">
-              <span role="columnheader">{t("reports.table.date")}</span>
-              <span role="columnheader">{t("reports.table.type")}</span>
-              <span role="columnheader">{t("reports.table.caption")}</span>
-              <span role="columnheader">{t("reports.table.reach")}</span>
-              <span role="columnheader">{t("reports.table.interactions")}</span>
-              <span role="columnheader">{t("reports.table.rate")}</span>
-            </div>
-            {report.topPosts.map((post) => (
-              <div className="reports__table-row" role="row" key={post.id}>
-                <span role="cell">{dayLabel(post.day)}</span>
-                <span role="cell" className="reports__type">
-                  {post.media_product_type || post.media_type || "POST"}
+      {instagram ? (
+        <Section
+          eyebrow={t("reports.networkEyebrow")}
+          title={t("reports.instagram.title")}
+          description={t("reports.instagram.hint")}
+        >
+          <NetworkKpis network={instagram} />
+
+          <div className="reports__grid">
+            <section className="reports__panel">
+              <header>
+                <h3>{t("reports.evolution")}</h3>
+                <span>
+                  {formatNumber(instagram.previous?.followers)} → {formatNumber(instagram.followers)}
                 </span>
-                <span role="cell" className="reports__caption">
-                  {post.caption || t("reports.table.noCaption")}
-                </span>
-                <span role="cell">{formatNumber(post.reach)}</span>
-                <span role="cell">{formatNumber(post.interactions)}</span>
-                <span role="cell">{formatPercent(post.engagementRate)}</span>
+              </header>
+              {instagramDaily.length > 1 ? (
+                <div
+                  className="reports__chart"
+                  role="img"
+                  aria-label={t("reports.evolution.aria")}
+                  style={{ "--report-accent": PLATFORM_COLOR.instagram }}
+                >
+                  {instagramDaily.map((row) => {
+                    const span = peak - floor || 1;
+                    const height = 18 + ((Number(row.followers) - floor) / span) * 82;
+                    return (
+                      <div
+                        className="reports__chart-col"
+                        key={row.metric_date}
+                        title={`${row.metric_date}: ${row.followers}`}
+                      >
+                        <div className="reports__chart-bar" style={{ height: `${height}%` }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="reports__empty">{t("reports.evolution.empty")}</p>
+              )}
+              <p className="reports__coverage">
+                {t("reports.coverage", {
+                  start: dayLabel(report.coverage.start, { day: "numeric", month: "short" }),
+                  end: dayLabel(report.coverage.end, { day: "numeric", month: "short" }),
+                  days: report.coverage.days,
+                  total: report.period.days,
+                })}
+              </p>
+            </section>
+
+            <section className="reports__panel">
+              <header>
+                <h3>{t("reports.byType")}</h3>
+                <span>{t("reports.byType.hint")}</span>
+              </header>
+              {instagram.byType.length ? (
+                <ul className="reports__bars">
+                  {instagram.byType.map((row) => {
+                    const max = Math.max(...instagram.byType.map((item) => item.interactions), 1);
+                    return (
+                      <li key={row.label}>
+                        <span>{row.label} · {row.count}</span>
+                        <div className="reports__bar-track">
+                          <div
+                            className="reports__bar-fill"
+                            style={{ width: `${Math.max(2, (row.interactions / max) * 100)}%` }}
+                          />
+                        </div>
+                        <strong>{formatNumber(row.interactions)}</strong>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="reports__empty">{t("reports.byType.empty")}</p>
+              )}
+            </section>
+          </div>
+
+          <section className="reports__panel">
+            <header>
+              <h3>{t("reports.demography")}</h3>
+              <span>{t("reports.demography.hint")}</span>
+            </header>
+            <div className="reports__demography">
+              <div>
+                <span>{t("reports.demography.gender")}</span>
+                <strong>
+                  {formatShare(instagram.audience?.female)} / {formatShare(instagram.audience?.male)}
+                </strong>
+                <small>{t("reports.demography.genderHint")}</small>
               </div>
+              <div>
+                <span>{t("reports.demography.local")}</span>
+                <strong>{formatShare(instagram.audience?.local)}</strong>
+                <small>{instagram.audience?.country ?? "Colombia"}</small>
+              </div>
+              <div className="reports__demography-ages">
+                <span>{t("reports.demography.ages")}</span>
+                {(instagram.audience?.ages ?? []).map((row) => (
+                  <div key={row.label}>
+                    <small>{row.label}</small>
+                    <div className="reports__bar-track">
+                      <div className="reports__bar-fill" style={{ width: `${row.share * 100}%` }} />
+                    </div>
+                    <strong>{formatShare(row.share)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </Section>
+      ) : null}
+
+      {tiktok ? (
+        <Section
+          eyebrow={t("reports.networkEyebrow")}
+          title={t("reports.tiktok.title")}
+          description={t("reports.tiktok.hint")}
+        >
+          <NetworkKpis network={tiktok} />
+
+          <div className="reports__grid">
+            <section className="reports__panel">
+              <header>
+                <h3>{t("reports.tiktok.traffic")}</h3>
+                <span>{formatShare(tiktok.traffic?.for_you)}</span>
+              </header>
+              <ul className="reports__source-list">
+                {[
+                  ["for_you", t("reports.tiktok.forYou")],
+                  ["profile", t("reports.tiktok.profile")],
+                  ["search", t("reports.tiktok.search")],
+                ].map(([key, label]) => (
+                  <li key={key}>
+                    <span>{label}</span>
+                    <div className="reports__bar-track">
+                      <div className="reports__bar-fill" style={{ width: `${(tiktok.traffic?.[key] ?? 0) * 100}%` }} />
+                    </div>
+                    <strong>{formatShare(tiktok.traffic?.[key])}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="reports__panel">
+              <header>
+                <h3>{t("reports.tiktok.hours")}</h3>
+                <span>{t("reports.tiktok.hours.hint")}</span>
+              </header>
+              {tiktok.bestHours.length ? (
+                <ul className="reports__chips">
+                  {tiktok.bestHours.map((hour) => <li key={hour}>{hour}</li>)}
+                </ul>
+              ) : (
+                <p className="reports__empty">{t("reports.tiktok.hours.empty")}</p>
+              )}
+            </section>
+          </div>
+
+          <section className="reports__panel">
+            <header>
+              <h3>{t("reports.tiktok.searches")}</h3>
+              <span>{t("reports.tiktok.searches.hint")}</span>
+            </header>
+            {tiktok.topSearches.length ? (
+              <ul className="reports__chips">
+                {tiktok.topSearches.map((term) => <li key={term}>“{term}”</li>)}
+              </ul>
+            ) : (
+              <p className="reports__empty">{t("reports.tiktok.searches.empty")}</p>
+            )}
+          </section>
+        </Section>
+      ) : null}
+
+      <Section
+        eyebrow={t("reports.contentEyebrow")}
+        title={t("reports.topPosts")}
+        description={t("reports.topPosts.hint")}
+      >
+        <PostsTable posts={report.topPosts} />
+      </Section>
+
+      <Section
+        eyebrow={t("reports.activityEyebrow")}
+        title={t("reports.activity")}
+        description={t("reports.activity.hint")}
+      >
+        {report.events.length ? (
+          <ul className="reports__events">
+            {report.events.map((event) => (
+              <li key={event.id}>
+                <time dateTime={event.event_date}>{dayLabel(event.event_date)}</time>
+                <div>
+                  <strong>{event.title}</strong>
+                  <span>{KIND_LABEL[event.kind] ?? event.kind}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="reports__empty">{t("reports.activity.empty")}</p>
+        )}
+        {report.campaigns.length ? (
+          <div className="reports__campaigns">
+            {report.campaigns.map((campaign) => (
+              <span key={campaign.id} style={{ "--campaign-color": campaign.color || "var(--color-primary)" }}>
+                {campaign.name}
+              </span>
             ))}
           </div>
-        ) : (
-          <p className="reports__empty">{t("reports.topPosts.empty")}</p>
-        )}
-      </section>
+        ) : null}
+      </Section>
 
-      <section className="reports__panel reports__notes">
-        <header>
-          <h3>{t("reports.notes")}</h3>
-          <span>{t("reports.notes.hint")}</span>
-        </header>
+      <Section
+        eyebrow={t("reports.notesEyebrow")}
+        title={t("reports.notes")}
+        description={t("reports.notes.hint")}
+      >
         <textarea
           rows={5}
           maxLength={4000}
@@ -395,19 +598,19 @@ export default function ReportsPage() {
           <button
             className="btn btn--ghost"
             type="button"
-            disabled={Boolean(busyMonth) || !report.posts}
+            disabled={Boolean(busyMonth) || !report.networks.length}
             onClick={() => generate()}
           >
             {busyMonth ? t("reports.generating") : t("reports.downloadWithNotes")}
           </button>
         </div>
-      </section>
+      </Section>
 
-      <section className="reports__panel">
-        <header>
-          <h3>{t("reports.history")}</h3>
-          <span>{t("reports.history.hint")}</span>
-        </header>
+      <Section
+        eyebrow={t("reports.historyEyebrow")}
+        title={t("reports.history")}
+        description={t("reports.history.hint")}
+      >
         {data.reports.length ? (
           <ul className="reports__history">
             {data.reports.map((item) => (
@@ -441,7 +644,7 @@ export default function ReportsPage() {
         ) : (
           <p className="reports__empty">{t("reports.history.empty")}</p>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

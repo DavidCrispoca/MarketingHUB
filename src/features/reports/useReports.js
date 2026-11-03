@@ -7,6 +7,12 @@ const LOCALE = "es-CO";
 
 export const reportsKey = (brandId) => ["reports", brandId];
 
+export const PLATFORM_LABEL = { instagram: "Instagram", tiktok: "TikTok" };
+export const platformLabel = (platform) => PLATFORM_LABEL[platform] ?? platform;
+
+// Badges follow the network identity used across the app and in the PDF deck.
+export const PLATFORM_COLOR = { instagram: "#833AB4", tiktok: "#FE2C55" };
+
 export function useReports(brandId) {
   return useQuery({
     queryKey: reportsKey(brandId),
@@ -29,6 +35,15 @@ export function useReports(brandId) {
         supabase.from("brand_colors").select("id,name,hex,role,position").eq("brand_id", brandId).order("position"),
       ]);
       for (const result of results) if (result.error) throw result.error;
+
+      // The monthly insights table arrives with its own migration. Until it is
+      // applied, the report still works from the daily snapshots.
+      const insights = await supabase
+        .from("social_insights_monthly")
+        .select("*")
+        .eq("brand_id", brandId)
+        .order("period_start");
+
       return {
         accounts: results[0].data ?? [],
         daily: results[1].data ?? [],
@@ -37,6 +52,7 @@ export function useReports(brandId) {
         campaigns: results[4].data ?? [],
         reports: results[5].data ?? [],
         colors: results[6].data ?? [],
+        insights: insights.error ? [] : insights.data ?? [],
       };
     },
   });
@@ -129,115 +145,261 @@ function postDay(post) {
 export const postInteractions = (post) =>
   number(post.likes) + number(post.comments) + number(post.shares) + number(post.saves);
 
-function sum(rows, field) {
-  return rows.reduce((total, row) => total + number(row[field]), 0);
+const TYPE_LABEL = {
+  REELS: "Reels",
+  FEED: "Publicaciones",
+  STORIES: "Historias",
+  VIDEO: "Videos",
+  IMAGE: "Fotos",
+  CAROUSEL_ALBUM: "Carruseles",
+};
+
+function postType(post) {
+  return TYPE_LABEL[post.media_product_type] ?? TYPE_LABEL[post.media_type] ?? "Otras";
 }
 
-function aggregate(rows, posts, events, campaigns, period) {
-  const followersOpening = rows.length ? number(rows[0].followers) : 0;
-  const followersClosing = rows.length ? number(rows[rows.length - 1].followers) : 0;
-  const net = followersClosing - followersOpening;
-  const gained = sum(rows, "followers_gained");
-  const lost = sum(rows, "followers_lost");
-  const reach = sum(rows, "reach");
-  const views = sum(rows, "views");
-  const profileViews = sum(rows, "profile_views");
-  const interactions = sum(rows, "total_interactions");
-  const monthPosts = posts.filter((post) => inRange(postDay(post), period.start, period.end));
+function groupByType(posts) {
+  const groups = new Map();
+  for (const post of posts) {
+    const label = postType(post);
+    const row = groups.get(label) ?? { label, count: 0, interactions: 0, views: 0 };
+    row.count += 1;
+    row.interactions += postInteractions(post);
+    row.views += number(post.views);
+    groups.set(label, row);
+  }
+  return [...groups.values()].sort((a, b) => b.interactions - a.interactions);
+}
+
+const MONTH_FIELDS = [
+  "followers_gained",
+  "followers_lost",
+  "reach",
+  "views",
+  "non_follower_views",
+  "profile_views",
+  "link_clicks",
+  "interactions",
+];
+
+// When no monthly insight row exists, fall back to the daily snapshots so the
+// report still shows real numbers instead of an empty slide.
+function deriveFromDaily(dailyRows) {
+  const sum = (field) => dailyRows.reduce((total, row) => total + number(row[field]), 0);
+  return {
+    followers: dailyRows.length ? number(dailyRows.at(-1).followers) : 0,
+    followers_gained: sum("followers_gained"),
+    followers_lost: sum("followers_lost"),
+    reach: sum("reach"),
+    views: sum("views"),
+    non_follower_views: 0,
+    profile_views: sum("profile_views"),
+    link_clicks: 0,
+    interactions: sum("total_interactions"),
+    posts_count: 0,
+    audience: {},
+    traffic: {},
+    top_searches: [],
+    best_hours: [],
+  };
+}
+
+function normalizeRow(row) {
+  const result = { ...row };
+  for (const field of MONTH_FIELDS) result[field] = number(row?.[field]);
+  result.followers = number(row?.followers);
+  result.posts_count = number(row?.posts_count);
+  result.audience = row?.audience ?? {};
+  result.traffic = row?.traffic ?? {};
+  result.top_searches = row?.top_searches ?? [];
+  result.best_hours = row?.best_hours ?? [];
+  return result;
+}
+
+function buildNetwork({ platform, account, current, previous, monthPosts, previousPosts = [], dailyRows }) {
+  const now = normalizeRow(current ?? deriveFromDaily(dailyRows));
+  const before = previous ? normalizeRow(previous) : null;
+
+  const posts = monthPosts.length ? monthPosts.length : now.posts_count;
+  // Post-level metrics are the source of truth for interactions: the daily
+  // snapshot total can lag behind and would make per-type shares exceed 100%.
+  const interactions = monthPosts.length
+    ? monthPosts.reduce((total, post) => total + postInteractions(post), 0)
+    : now.interactions;
+  const previousInteractions = previousPosts.length
+    ? previousPosts.reduce((total, post) => total + postInteractions(post), 0)
+    : (before?.interactions ?? 0);
+  const gained = now.followers_gained;
+  const lost = now.followers_lost;
+  const net = gained || lost ? gained - lost : now.followers - (before?.followers ?? now.followers);
+  const nonFollowerShare = now.views ? now.non_follower_views / now.views : null;
+  const engagementRate = now.reach ? interactions / now.reach : null;
+
+  const metrics = {
+    followers: now.followers,
+    followersGained: gained,
+    followersLost: lost,
+    reach: now.reach,
+    views: now.views,
+    profileViews: now.profile_views,
+    linkClicks: now.link_clicks,
+    interactions,
+    nonFollowerViews: now.non_follower_views,
+  };
+  const previousMetrics = before
+    ? {
+        followers: before.followers,
+        followersGained: before.followers_gained,
+        reach: before.reach,
+        views: before.views,
+        profileViews: before.profile_views,
+        linkClicks: before.link_clicks,
+        interactions: previousInteractions,
+        nonFollowerViews: before.non_follower_views,
+      }
+    : null;
+
+  const topPosts = [...monthPosts]
+    .sort((a, b) => number(b.views) - number(a.views))
+    .slice(0, 6)
+    .map((post) => ({
+      ...post,
+      platform,
+      day: postDay(post),
+      type: postType(post),
+      interactions: postInteractions(post),
+      engagementRate: number(post.reach) > 0 ? postInteractions(post) / number(post.reach) : 0,
+    }));
 
   return {
-    followersOpening,
-    followersClosing,
+    platform,
+    label: platformLabel(platform),
+    handle: account?.handle ?? "",
+    displayName: account?.display_name ?? "",
+    status: account?.status ?? "demo",
+    isDemo: (account?.status ?? "demo") !== "connected",
+    ...metrics,
     net,
-    gained: gained || Math.max(net, 0),
-    lost: lost || Math.max(-net, 0),
-    reach,
-    views,
-    profileViews,
-    interactions,
-    posts: monthPosts.length,
-    monthPosts,
-    events,
-    campaigns,
+    posts,
+    nonFollowerShare,
+    engagementRate,
+    audience: now.audience,
+    traffic: now.traffic,
+    topSearches: now.top_searches,
+    bestHours: now.best_hours,
+    byType: groupByType(monthPosts),
+    topPosts,
+    previous: previousMetrics,
+    delta: previousMetrics
+      ? {
+          followers: percentChange(metrics.followers, previousMetrics.followers),
+          followersGained: percentChange(gained, previousMetrics.followersGained),
+          reach: percentChange(metrics.reach, previousMetrics.reach),
+          views: percentChange(metrics.views, previousMetrics.views),
+          profileViews: percentChange(metrics.profileViews, previousMetrics.profileViews),
+          linkClicks: percentChange(metrics.linkClicks, previousMetrics.linkClicks),
+          interactions: percentChange(metrics.interactions, previousMetrics.interactions),
+          nonFollowerViews: percentChange(metrics.nonFollowerViews, previousMetrics.nonFollowerViews),
+        }
+      : null,
   };
 }
 
 export function buildMonthlyReport(data, brand, monthKey) {
   const period = monthBounds(monthKey);
+  const previousMonthKey = shiftMonthKey(monthKey, -1);
   const accounts = data?.accounts ?? [];
-  const account = accounts.find((row) => row.platform === "instagram") ?? accounts[0] ?? null;
-  const accountDaily = (data?.daily ?? []).filter((row) => !account || row.account_id === account.id);
-  const daily = accountDaily.filter((row) => inRange(row.metric_date, period.start, period.end));
+  const insights = data?.insights ?? [];
   const posts = data?.posts ?? [];
+
+  const networks = accounts
+    .map((account) => {
+      const accountInsights = insights.filter((row) => row.account_id === account.id);
+      const current = accountInsights.find((row) => String(row.period_start).slice(0, 7) === monthKey) ?? null;
+      const previous = accountInsights.find((row) => String(row.period_start).slice(0, 7) === previousMonthKey) ?? null;
+      const monthPosts = posts.filter(
+        (post) => post.social_account_id === account.id && inRange(postDay(post), period.start, period.end),
+      );
+      const previousPosts = posts.filter(
+        (post) =>
+          post.social_account_id === account.id
+          && inRange(postDay(post), monthBounds(previousMonthKey).start, monthBounds(previousMonthKey).end),
+      );
+      const dailyRows = (data?.daily ?? []).filter(
+        (row) => row.account_id === account.id && inRange(row.metric_date, period.start, period.end),
+      );
+      return buildNetwork({ platform: account.platform, account, current, previous, monthPosts, previousPosts, dailyRows });
+    })
+    .filter((network) => network.followers || network.views || network.posts);
+
+  const instagram = networks.find((network) => network.platform === "instagram") ?? null;
+  const tiktok = networks.find((network) => network.platform === "tiktok") ?? null;
+
+  const instagramAccount = accounts.find((account) => account.platform === "instagram");
+  const instagramDaily = instagramAccount
+    ? (data?.daily ?? []).filter(
+        (row) => row.account_id === instagramAccount.id && inRange(row.metric_date, period.start, period.end),
+      )
+    : [];
+
   const events = (data?.events ?? []).filter((row) => inRange(row.event_date, period.start, period.end));
   const campaigns = (data?.campaigns ?? []).filter((row) => {
     const start = row.start_date ?? period.start;
     const end = row.end_date ?? period.end;
     return start <= period.end && end >= period.start;
   });
-  const current = aggregate(daily, posts, events, campaigns, period);
 
-  const previousPeriod = monthBounds(shiftMonthKey(monthKey, -1));
-  const previousDaily = accountDaily.filter((row) =>
-    inRange(row.metric_date, previousPeriod.start, previousPeriod.end),
-  );
-  const previous = aggregate(
-    previousDaily,
-    posts,
-    [],
-    [],
-    previousPeriod,
-  );
+  const topPosts = networks
+    .flatMap((network) => network.topPosts.slice(0, 3))
+    .sort((a, b) => number(b.views) - number(a.views));
 
-  // Opening balance is the last snapshot before the period. It is more accurate
-  // than the first day inside it, because Meta may not return every day.
-  const before = accountDaily.filter((row) => row.metric_date < period.start).at(-1) ?? null;
-  if (before) {
-    current.followersOpening = number(before.followers);
-    current.net = current.followersClosing - current.followersOpening;
-  }
+  // The proposal slide needs the campaign that comes after the reported month,
+  // not only the ones that overlapped it.
+  const upcomingCampaign =
+    (data?.campaigns ?? [])
+      .filter((row) => row.start_date && row.start_date > period.end)
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))[0] ?? null;
 
-  const topPosts = [...current.monthPosts]
-    .sort((a, b) => postInteractions(b) - postInteractions(a))
-    .slice(0, 5)
-    .map((post) => ({
-      ...post,
-      day: postDay(post),
-      interactions: postInteractions(post),
-      engagementRate: number(post.reach) > 0 ? postInteractions(post) / number(post.reach) : 0,
-    }));
+  const sumBy = (field) => networks.reduce((total, network) => total + (network[field] ?? 0), 0);
 
-  const mediaTypes = current.monthPosts.reduce((accumulator, post) => {
-    const key = post.media_product_type || post.media_type || "POST";
-    accumulator[key] = (accumulator[key] ?? 0) + 1;
-    return accumulator;
-  }, {});
+  const coverage = instagramDaily.length
+    ? {
+        start: instagramDaily[0].metric_date,
+        end: instagramDaily.at(-1).metric_date,
+        days: instagramDaily.length,
+      }
+    : { start: period.start, end: period.end, days: 0 };
 
   const colors = data?.colors ?? [];
   const primary = colors.find((color) => color.role === "primary")?.hex ?? "#2F4A3E";
   const accent = colors.find((color) => color.role === "accent")?.hex ?? "#B4552D";
   const neutral = colors.find((color) => color.role === "neutral")?.hex ?? "#F3EBDD";
 
-  const coverage = daily.length
-    ? { start: daily[0].metric_date, end: daily[daily.length - 1].metric_date, days: daily.length }
-    : { start: period.start, end: period.end, days: 0 };
-
   return {
     monthKey,
+    previousMonthKey,
     label: monthLabel(monthKey),
     shortLabel: monthLabel(monthKey, "short"),
-    previousLabel: monthLabel(shiftMonthKey(monthKey, -1)),
+    previousLabel: monthLabel(previousMonthKey),
     period,
     coverage,
     complete: coverage.days >= period.days && coverage.start === period.start,
     brand,
-    account,
     palette: { primary, accent, neutral },
-    ...current,
-    daily,
-    previous,
+    audienceCity: instagram?.audience?.top_city ?? null,
+    networks,
+    instagram,
+    tiktok,
+    instagramDaily,
+    events,
+    campaigns,
+    upcomingCampaign,
     topPosts,
-    mediaTypes,
+    totalViews: sumBy("views"),
+    totalInteractions: sumBy("interactions"),
+    totalFollowersGained: sumBy("followersGained"),
+    totalPosts: sumBy("posts"),
+    isDemo: networks.some((network) => network.isDemo),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -252,6 +414,11 @@ export const formatNumber = (value) => new Intl.NumberFormat(LOCALE).format(Math
 export const formatPercent = (value) => {
   if (value === null || value === undefined) return "—";
   return `${value > 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
+};
+
+export const formatShare = (value) => {
+  if (value === null || value === undefined) return "—";
+  return `${(value * 100).toFixed(1)}%`;
 };
 
 export { ZONE };
