@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="MarketingHUB">
+  <rect width="32" height="32" rx="9" fill="#C800DF" />
+  <path
+    d="M8 23.5V8.5h3.6l4.4 8 4.4-8H24v15h-3.4v-9.1l-3.7 6.6h-1.8l-3.7-6.6v9.1z"
+    fill="#ffffff"
+  />
+</svg>

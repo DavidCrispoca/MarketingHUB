@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Gestión de contenido para marcas en Instagram y TikTok" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>MarketingHUB</title>
+    <script>
+      // Apply the stored theme before first paint to avoid a flash of the wrong theme.
+      (function () {
+        try {
+          var mode = localStorage.getItem("marketinghub_theme") || "system";
+          var dark =
+            mode === "dark" ||
+            (mode === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (error) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+.banks { display:flex; flex-direction:column; gap:var(--space-4); }
+.banks > header { display:flex; flex-direction:column; gap:var(--space-2); }
+.banks > header > p:last-child { color:var(--color-text-2); }
+.banks__tabs { display:flex; gap:var(--space-2); overflow:auto; }
+.banks__tabs button { min-height:44px; padding:0 var(--space-4); color:var(--color-text-2); background:transparent; border:1px solid var(--color-border); border-radius:var(--radius-full); font:inherit; white-space:nowrap; cursor:pointer; }
+.banks__tabs button.is-active { color:var(--color-on-primary); background:var(--color-primary); border-color:var(--color-primary); }
+.banks__form { display:flex; flex-direction:column; gap:var(--space-3); padding:var(--space-4); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); }
+.banks__form label { display:flex; flex-direction:column; gap:var(--space-1); color:var(--color-text-2); }
+.banks__form input, .banks__form select, .banks__form textarea, .banks__item select { min-height:44px; width:100%; padding:var(--space-2) var(--space-3); color:var(--color-text); background:var(--color-bg); border:1px solid var(--color-border-strong); border-radius:var(--radius-md); }
+.banks__form textarea { min-height:88px; resize:vertical; }
+.banks__date-row { display:flex; flex-wrap:wrap; gap:var(--space-3); }
+.banks__date-row label { flex:1; min-width:130px; }
+.banks__form button { align-self:flex-start; }
+.banks__error { color:var(--color-danger); }
+.banks__list { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--space-3); }
+.banks__empty { grid-column:1/-1; padding:var(--space-6); color:var(--color-text-2); text-align:center; border:1px dashed var(--color-border-strong); border-radius:var(--radius-lg); }
+.banks__item { display:flex; flex-direction:column; align-items:flex-start; gap:var(--space-3); min-width:0; padding:var(--space-4); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); overflow-wrap:anywhere; }
+.banks__item header { display:flex; width:100%; justify-content:space-between; align-items:flex-start; gap:var(--space-2); }
+.banks__item h3 { display:flex; align-items:center; gap:var(--space-2); }
+.banks__item > p { white-space:pre-wrap; }
+.banks__item > span, .banks__item header > span, .banks__status { color:var(--color-text-2); font-size:var(--text-sm); }
+.banks__item select { width:auto; max-width:100%; }
+.banks__tags { display:flex; flex-wrap:wrap; gap:var(--space-1); }
+.banks__tags span { padding:2px 8px; color:var(--color-text-2); background:var(--color-surface-2); border-radius:var(--radius-full); font-size:var(--text-xs); }
+.banks__swatch { display:inline-block; flex:none; width:16px; height:16px; border:1px solid var(--color-border); border-radius:50%; }
+.banks__delete { min-height:44px; color:var(--color-danger); background:transparent; border:0; font:inherit; cursor:pointer; }
+
+.banks__tabs { gap:var(--space-4); border-bottom:1px solid var(--color-border); }
+.banks__tabs button { border:0; border-bottom:2px solid transparent; border-radius:0; }
+.banks__tabs button.is-active { color:var(--color-primary); background:transparent; border-color:var(--color-primary); }
+.banks__list { display:flex; flex-direction:column; gap:0; border-top:1px solid var(--color-border); }
+.banks__item { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:var(--space-2) var(--space-4); padding:var(--space-4) var(--space-2); background:transparent; border:0; border-bottom:1px solid var(--color-border); border-radius:0; }
+.banks__item header, .banks__item > p, .banks__item > span, .banks__item > select, .banks__item > .banks__tags { grid-column:1; }
+.banks__item > .banks__delete { grid-column:2; grid-row:1; }
+.banks__item > p { max-width:72ch; color:var(--color-text-2); }
+@media(max-width:560px) { .banks__item { grid-template-columns:minmax(0,1fr); } .banks__item > .banks__delete { grid-column:1; grid-row:auto; } }
+@media(max-width:760px) { .banks__tabs { flex-wrap:wrap; overflow:visible; gap:0 var(--space-4); } }

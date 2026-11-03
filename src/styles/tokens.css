@@ -1,0 +1,131 @@
+:root {
+  /* The editorial serif gives brand work a voice; the system sans stays quick to read. */
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-body: "Aptos", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.2rem;
+  --text-xl: 1.55rem;
+  --text-2xl: clamp(2.15rem, 4vw, 3.25rem);
+  --text-3xl: clamp(2.8rem, 6vw, 4.6rem);
+
+  --leading-tight: 1.08;
+  --leading-normal: 1.55;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 5px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 140ms;
+  --dur-base: 190ms;
+  --dur-enter: 230ms;
+
+  --topbar-h: 70px;
+  --content-max: 1540px;
+  --sidebar-w: 216px;
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: #f5f1eb;
+  --color-surface: #fffdfa;
+  --color-surface-2: #eee9f1;
+  --color-border: #e2dce4;
+  --color-border-strong: #cfc5d4;
+
+  --color-text: #28212d;
+  --color-text-2: #625967;
+  --color-text-3: #786e7e;
+
+  --color-primary: #7041b5;
+  --color-primary-hover: #5d329e;
+  --color-on-primary: #ffffff;
+  --color-secondary: #a36c43;
+  --color-secondary-hover: #845534;
+
+  --color-success: #2f7657;
+  --color-warning: #95621e;
+  --color-danger: #a83f48;
+
+  --status-idea: #625967;
+  --status-idea-bg: #eee9f1;
+  --status-draft: #625967;
+  --status-draft-bg: #eee9f1;
+  --status-review: #805317;
+  --status-review-bg: #f5ebd9;
+  --status-approved: #28684b;
+  --status-approved-bg: #e2eee7;
+  --status-scheduled: #5d329e;
+  --status-scheduled-bg: #eee5f8;
+  --status-published: #28684b;
+  --status-published-bg: #e2eee7;
+
+  --shadow-sm: 0 1px 2px rgba(42, 28, 52, 0.07);
+  --shadow-md: 0 12px 34px rgba(42, 28, 52, 0.12);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #19161d;
+  --color-surface: #221e27;
+  --color-surface-2: #2b2631;
+  --color-border: #3b3441;
+  --color-border-strong: #514759;
+
+  --color-text: #f5eff7;
+  --color-text-2: #c2b8c8;
+  --color-text-3: #a89bad;
+
+  --color-primary: #b99ae5;
+  --color-primary-hover: #cbb2ed;
+  --color-on-primary: #21172d;
+  --color-secondary: #d5a67e;
+  --color-secondary-hover: #e4bd9b;
+
+  --color-success: #8ac7a4;
+  --color-warning: #e0bd78;
+  --color-danger: #e89aa0;
+
+  --status-idea: #c2b8c8;
+  --status-idea-bg: #342f3a;
+  --status-draft: #c2b8c8;
+  --status-draft-bg: #342f3a;
+  --status-review: #e0bd78;
+  --status-review-bg: #403522;
+  --status-approved: #8ac7a4;
+  --status-approved-bg: #23392f;
+  --status-scheduled: #cbb2ed;
+  --status-scheduled-bg: #382c49;
+  --status-published: #8ac7a4;
+  --status-published-bg: #23392f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 14px 38px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-enter: 1ms;
+  }
+}

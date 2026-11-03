@@ -1,0 +1,17 @@
+{
+  "name": "MarketingHUB",
+  "short_name": "MarketingHUB",
+  "description": "Gestión de contenido para marcas en Instagram y TikTok",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#C800DF",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
