@@ -601,5 +601,10 @@
   "reports.notes.hint": "Notas del equipo que se incluyen en el PDF. Úsalas para explicar decisiones y dejar el contexto del mes.",
   "reports.history.hint": "Reportes ya generados. Vuelve a descargar uno sin reconstruir los datos.",
   "reports.table.network": "Red",
-  "reports.table.views": "Vistas"
+  "reports.table.views": "Vistas",
+
+  "manual.colors.hint": "Paleta oficial con CMYK, Pantone y usos. Consúltala antes de crear una pieza.",
+  "manual.fonts.hint": "Tipografías, pesos y archivos licenciados. Úsalas para que los textos respeten la identidad.",
+  "manual.logos.hint": "Versiones del logo, tamaños mínimos y espacio de respeto. Úsalas al montar cualquier pieza.",
+  "manual.guidelines.hint": "Voz, tono y reglas de contenido. Léelas antes de escribir un caption."
 }

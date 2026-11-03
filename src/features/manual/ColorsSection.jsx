@@ -113,6 +113,7 @@ export default function ColorsSection({ brandId, colors }) {
   return (
     <ManualBlock
       title={t("manual.colors.title")}
+      description={t("manual.colors.hint")}
       count={colors.length}
       action={
         <button

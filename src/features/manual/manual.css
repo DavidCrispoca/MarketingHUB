@@ -636,3 +636,10 @@
     break-inside: avoid-page;
   }
 }
+
+/* The manual blocks are now collapsible sections: the shared shell owns the
+   chrome, so the old top border and padding are no longer needed. */
+.m-block { padding-top:0; border-top:0; }
+.m-block .ui-section__body { gap:var(--space-4); }
+.m-block__action { display:flex; justify-content:flex-end; }
+.manual > .m-block + .m-block { margin-top:0; }

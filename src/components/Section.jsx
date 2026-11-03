@@ -6,6 +6,7 @@ export default function Section({
   title,
   description,
   eyebrow,
+  badge,
   defaultOpen = false,
   className = "",
   children,
@@ -16,7 +17,12 @@ export default function Section({
         <span className="ui-section__chevron" aria-hidden="true" />
         <span className="ui-section__text">
           {eyebrow ? <span className="ui-section__eyebrow">{eyebrow}</span> : null}
-          <span className="ui-section__title">{title}</span>
+          <span className="ui-section__title-row">
+            <span className="ui-section__title">{title}</span>
+            {badge === undefined || badge === null ? null : (
+              <span className="ui-section__badge">{badge}</span>
+            )}
+          </span>
           {description ? <span className="ui-section__description">{description}</span> : null}
         </span>
       </summary>

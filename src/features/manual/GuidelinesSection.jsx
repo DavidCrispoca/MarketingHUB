@@ -76,6 +76,7 @@ export default function GuidelinesSection({ brandId, guidelines }) {
   return (
     <ManualBlock
       title={t("manual.guidelines.title")}
+      description={t("manual.guidelines.hint")}
       count={guidelines.length}
       action={
         <button

@@ -160,6 +160,7 @@ export default function FontsSection({ brandId, fonts, urls }) {
   return (
     <ManualBlock
       title={t("manual.fonts.title")}
+      description={t("manual.fonts.hint")}
       count={fonts.length}
       action={
         <button

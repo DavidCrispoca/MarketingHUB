@@ -157,6 +157,7 @@ export default function LogosSection({ brandId, logos, urls, assets, assetUrls }
   return (
     <ManualBlock
       title={t("manual.logos.title")}
+      description={t("manual.logos.hint")}
       count={logos.length}
       action={
         <button
