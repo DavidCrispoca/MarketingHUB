@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useI18n } from "../../i18n/index.jsx";
@@ -39,6 +39,12 @@ export default function BrandsPage() {
     }
   }
 
+  // Temporary single-brand workspace: everyone who redeems the code lands
+  // directly on the only brand, and the list cannot grow by accident.
+  if (!isPending && !isError && brands.length === 1) {
+    return <Navigate to={`/m/${brands[0].slug}`} replace />;
+  }
+
   return (
     <section className="brands">
       <header className="brands__head">
@@ -48,13 +54,15 @@ export default function BrandsPage() {
           <p className="brands__lead">{t("brands.subtitle")}</p>
         </div>
 
-        <button
-          className="btn btn--ghost"
-          type="button"
-          onClick={() => setFormOpen((open) => !open)}
-        >
-          {formOpen ? t("brands.cancel") : t("brands.new")}
-        </button>
+        {brands.length ? null : (
+          <button
+            className="btn btn--ghost"
+            type="button"
+            onClick={() => setFormOpen((open) => !open)}
+          >
+            {formOpen ? t("brands.cancel") : t("brands.new")}
+          </button>
+        )}
       </header>
 
       {formOpen ? (
