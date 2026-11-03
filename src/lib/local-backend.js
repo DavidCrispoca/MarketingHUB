@@ -1,4 +1,4 @@
-const DATABASE_KEY = "marketinghub.local.database.v2";
+const DATABASE_KEY = "marketinghub.local.database.v3";
 const FILE_DATABASE = "marketinghub-local-files";
 const FILE_STORE = "objects";
 const WORKSPACE_ID = "local-marketinghub-workspace";
@@ -58,6 +58,32 @@ const POSTS = [
   ["2026-10-31T23:00:00Z", "2026-11-02T12:00:00Z", 4320, 176, 31, 19, 28, 2640, "VIDEO", "REELS", "Historias que no duermen: recorrido nocturno de cierre de mes."],
 ];
 
+// TikTok is a second account on purpose: the monthly report compares the two
+// networks instead of treating Instagram as the whole story.
+const TIKTOK_POSTS = [
+  ["2026-09-04T23:30:00Z", 8700, "El patio de 1925 en quince segundos."],
+  ["2026-09-08T22:00:00Z", 2900, "Tres objetos que no están en los libros de historia."],
+  ["2026-09-11T23:00:00Z", 5200, "El sonido de la casa cuando cae la tarde."],
+  ["2026-09-15T22:30:00Z", 4400, "Así se ve el balcón desde la carrera segunda."],
+  ["2026-09-18T23:30:00Z", 3800, "Un café de origen servido en el patio."],
+  ["2026-09-22T22:00:00Z", 6100, "Lo que encontraron restaurando la puerta principal."],
+  ["2026-09-25T23:00:00Z", 2100, "El reloj de la sala sigue andando."],
+  ["2026-09-28T22:30:00Z", 3400, "Preguntas que nos hacen todos los sábados."],
+  ["2026-09-30T23:30:00Z", 4600, "Cierre de septiembre en la casa."],
+  ["2026-10-02T23:00:00Z", 5200, "La casa cumple 101 años."],
+  ["2026-10-04T22:30:00Z", 6400, "El patio que era el corazón de la familia."],
+  ["2026-10-06T23:00:00Z", 8100, "Lo que guarda la sala de los espejos."],
+  ["2026-10-08T22:00:00Z", 11300, "Taller de patrimonio: así lo vivimos."],
+  ["2026-10-11T23:30:00Z", 7800, "Tres rincones que casi nadie ve."],
+  ["2026-10-14T22:00:00Z", 9600, "El café que se toma en el patio."],
+  ["2026-10-17T23:00:00Z", 13400, "Chisme histórico: la casa de 1925."],
+  ["2026-10-20T22:30:00Z", 10700, "Antes y después de los balcones."],
+  ["2026-10-23T23:30:00Z", 12900, "Noche patrimonial, sin filtros."],
+  ["2026-10-26T22:00:00Z", 4600, "Los oficios del centro histórico."],
+  ["2026-10-29T23:00:00Z", 3900, "Un minuto en el patio a las seis de la tarde."],
+  ["2026-10-31T23:30:00Z", 2500, "Gracias por acompañarnos en octubre."],
+];
+
 const EVENTS = [
   ["e0e00000-0000-4000-8000-000000000001", "Noche de museos", "evento", "2026-09-20", "Apertura nocturna con recorrido guiado."],
   ["e0e00000-0000-4000-8000-000000000002", "Lanzamiento de Octubre patrimonial", "campana", "2026-10-01", "Arranque de la campaña del mes."],
@@ -75,12 +101,88 @@ const CAMPAIGNS = [
 
 const ITEMS = [
   ["c17e0000-0000-4000-8000-000000000001", "Reel: los balcones cumplen 101 años", "borrador", "Los balcones de la casa vuelven a mirar la carrera segunda. #Ibagué", "2026-11-06T16:00:00Z", "Grabar al atardecer.", null],
-  ["c17e0000-0000-4000-8000-000000000002", "Carrusel: oficios del centro de Ibagué", "en_revision", "Los oficios que sostienen el centro histórico: ebanistería, zapatería, encuadernación.", "2026-11-10T15:00:00Z", "Faltan dos fotos.", null],
-  ["c17e0000-0000-4000-8000-000000000003", "Café con historia de noviembre", "aprobado", "Sábado de Café con historia. Reserva tu recorrido.", "2026-11-15T16:00:00Z", "", null],
+  ["c17e0000-0000-4000-8000-000000000002", "Carrusel: oficios del centro de Ibagué", "borrador", "Los oficios que sostienen el centro histórico: ebanistería, zapatería, encuadernación.", "2026-11-10T15:00:00Z", "Faltan dos fotos.", null],
+  ["c17e0000-0000-4000-8000-000000000003", "Café con historia de noviembre", "borrador", "Sábado de Café con historia. Reserva tu recorrido.", "2026-11-15T16:00:00Z", "", null],
   ["c17e0000-0000-4000-8000-000000000004", "Recorrido nocturno de fin de año", "idea", "La casa en diciembre: luces, patios y memoria.", "2026-12-05T23:00:00Z", "Aún sin fecha confirmada.", null],
   ["c17e0000-0000-4000-8000-000000000005", "Chisme histórico: el reloj de la sala", "programado", "El reloj de la sala sigue marcando las horas de la casa.", "2026-11-20T22:00:00Z", "", null],
   ["c17e0000-0000-4000-8000-000000000006", "Cierre de Octubre patrimonial", "publicado", "Gracias por acompañarnos en octubre.", "2026-10-31T23:00:00Z", "", "https://www.instagram.com/casagomezramirez/"],
 ];
+
+const IG_AUDIENCE_SEP = {
+  female: 0.548,
+  male: 0.452,
+  local: 0.921,
+  country: "Colombia",
+  top_city: "Ibagué",
+  ages: [
+    { label: "18-24", share: 0.131 },
+    { label: "25-34", share: 0.398 },
+    { label: "35-44", share: 0.284 },
+    { label: "45-54", share: 0.121 },
+    { label: "55+", share: 0.066 },
+  ],
+};
+
+const IG_AUDIENCE_OCT = {
+  female: 0.565,
+  male: 0.435,
+  local: 0.934,
+  country: "Colombia",
+  top_city: "Ibagué",
+  ages: [
+    { label: "18-24", share: 0.148 },
+    { label: "25-34", share: 0.412 },
+    { label: "35-44", share: 0.276 },
+    { label: "45-54", share: 0.108 },
+    { label: "55+", share: 0.056 },
+  ],
+};
+
+const TIKTOK_AUDIENCE = {
+  female: 0.612,
+  male: 0.388,
+  local: 0.887,
+  country: "Colombia",
+  top_city: "Ibagué",
+  ages: [
+    { label: "18-24", share: 0.284 },
+    { label: "25-34", share: 0.446 },
+    { label: "35-44", share: 0.196 },
+    { label: "45-54", share: 0.061 },
+    { label: "55+", share: 0.013 },
+  ],
+};
+
+// Monthly totals derived from the daily snapshots keep the report and the chart
+// in agreement instead of typing the same number twice.
+function monthTotals(rows, monthKey) {
+  const scoped = rows.filter((row) => row.metric_date.startsWith(monthKey));
+  const sum = (field) => scoped.reduce((total, row) => total + (Number(row[field]) || 0), 0);
+  return {
+    followers: scoped.length ? Number(scoped.at(-1).followers) : 0,
+    followers_gained: sum("followers_gained"),
+    followers_lost: sum("followers_lost"),
+    reach: sum("reach"),
+    views: sum("views"),
+    profile_views: sum("profile_views"),
+    interactions: sum("total_interactions"),
+  };
+}
+
+function tiktokTotals(posts, monthKey, { followers, gained, lost }) {
+  const scoped = posts.filter((post) => post.published_at.startsWith(monthKey));
+  const sum = (field) => scoped.reduce((total, post) => total + (Number(post[field]) || 0), 0);
+  return {
+    followers,
+    followers_gained: gained,
+    followers_lost: lost,
+    reach: sum("reach"),
+    views: sum("views"),
+    profile_views: Math.round(sum("views") * 0.043),
+    interactions: sum("likes") + sum("comments") + sum("shares") + sum("saves"),
+    posts_count: scoped.length,
+  };
+}
 
 function makeDaily(accountId, posts) {
   const rows = [];
@@ -188,6 +290,94 @@ function makeSeed() {
     }),
   );
 
+  const tiktokAccountId = "50c14000-0000-4000-8000-000000000002";
+  const tiktokPosts = TIKTOK_POSTS.map(([published_at, views, caption], index) => ({
+    id: `90570000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`,
+    brand_id: BRAND_ID,
+    social_account_id: tiktokAccountId,
+    external_post_id: `demo-tiktok-${published_at.slice(0, 10)}`,
+    content_item_id: null,
+    published_at,
+    captured_at: iso(day(-1)),
+    views,
+    likes: Math.round(views * 0.082),
+    comments: Math.max(1, Math.round(views * 0.006)),
+    shares: Math.round(views * 0.015),
+    saves: Math.round(views * 0.008),
+    reach: Math.round(views * 0.81),
+    media_type: "VIDEO",
+    media_product_type: "VIDEO",
+    caption,
+    permalink: "https://www.tiktok.com/@casagomezramirez",
+  }));
+
+  const dailyRows = makeDaily(accountId, posts);
+  const igSeptember = monthTotals(dailyRows, "2026-09");
+  const igOctober = monthTotals(dailyRows, "2026-10");
+  const tiktokSeptember = tiktokTotals(tiktokPosts, "2026-09", { followers: 1356, gained: 120, lost: 8 });
+  const tiktokOctober = tiktokTotals(tiktokPosts, "2026-10", { followers: 1870, gained: 540, lost: 26 });
+
+  const insights = [
+    {
+      id: "9d000000-0000-4000-8000-000000000001",
+      brand_id: BRAND_ID,
+      account_id: accountId,
+      period_start: "2026-09-01",
+      ...igSeptember,
+      posts_count: 9,
+      non_follower_views: Math.round(igSeptember.views * 0.48),
+      link_clicks: 24,
+      audience: IG_AUDIENCE_SEP,
+      traffic: {},
+      top_searches: ["casa gómez ramírez", "café ibagué", "museos en ibagué"],
+      best_hours: ["Sábados 6–8 p. m.", "Domingos 11 a. m.–1 p. m."],
+      created_at: iso(day(-32)),
+    },
+    {
+      id: "9d000000-0000-4000-8000-000000000002",
+      brand_id: BRAND_ID,
+      account_id: accountId,
+      period_start: "2026-10-01",
+      ...igOctober,
+      posts_count: 11,
+      non_follower_views: Math.round(igOctober.views * 0.61),
+      link_clicks: 37,
+      audience: IG_AUDIENCE_OCT,
+      traffic: {},
+      top_searches: ["casa gómez ramírez", "museos en ibagué", "planes en ibagué", "café de origen"],
+      best_hours: ["Sábados 6–8 p. m.", "Domingos 11 a. m.–1 p. m."],
+      created_at: iso(day(-1)),
+    },
+    {
+      id: "9d000000-0000-4000-8000-000000000003",
+      brand_id: BRAND_ID,
+      account_id: tiktokAccountId,
+      period_start: "2026-09-01",
+      ...tiktokSeptember,
+      non_follower_views: Math.round(tiktokSeptember.views * 0.71),
+      link_clicks: 9,
+      audience: TIKTOK_AUDIENCE,
+      traffic: { for_you: 0.652, profile: 0.183, search: 0.165 },
+      top_searches: ["casa gomez ramirez", "museo ibagué", "café ibagué"],
+      best_hours: ["Sábados 8–9 p. m.", "Domingos 7–8 p. m."],
+      created_at: iso(day(-32)),
+    },
+    {
+      id: "9d000000-0000-4000-8000-000000000004",
+      brand_id: BRAND_ID,
+      account_id: tiktokAccountId,
+      period_start: "2026-10-01",
+      ...tiktokOctober,
+      non_follower_views: Math.round(tiktokOctober.views * 0.78),
+      link_clicks: 31,
+      audience: TIKTOK_AUDIENCE,
+      traffic: { for_you: 0.784, profile: 0.121, search: 0.095 },
+      top_searches: ["casa gomez ramirez", "planes en ibagué", "museos en ibagué", "café de origen tolima", "qué hacer en ibagué"],
+      best_hours: ["Sábados 8–9 p. m.", "Jueves 9–10 p. m.", "Domingos 7–8 p. m."],
+      created_at: iso(day(-1)),
+    },
+  ];
+
   const items = ITEMS.map(([id, title, status, caption, scheduled_at, notes, published_url], index) => ({
     id,
     brand_id: BRAND_ID,
@@ -264,7 +454,7 @@ function makeSeed() {
       caption_override: "",
     })),
     content_item_assets: [{ brand_id: BRAND_ID, content_item_id: items[3].id, asset_id: "c0000000-0000-4000-8000-000000000001", position: 0 }],
-    content_status_history: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[1].id, from_status: "borrador", to_status: "en_revision", changed_by: "Equipo Casa GR", comment: "Lista para revisión", created_at: iso(day(-2)) }],
+    content_status_history: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[1].id, from_status: "idea", to_status: "borrador", changed_by: "Equipo Casa GR", comment: "Lista para producción", created_at: iso(day(-2)) }],
     content_comments: [{ id: uuid(), brand_id: BRAND_ID, content_item_id: items[1].id, author_name: "Equipo Casa GR", body: "¿Podemos abrir con la foto del patio?", created_at: iso(day(-1)) }],
     reminders: [
       { id: "ae000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, title: "Publicar el reel de los balcones", notes: "Revisar el audio antes de programar.", remind_at: "2026-11-06T13:00:00Z", repeat_rule: "none", kind: "tarea", content_item_id: items[0].id, campaign_id: null, done: false, created_at: iso(day(-3)) },
@@ -272,9 +462,11 @@ function makeSeed() {
     ],
     social_accounts: [
       { id: accountId, brand_id: BRAND_ID, platform: "instagram", handle: "casagomezramirez", display_name: "Casa Gómez Ramírez", status: "demo", external_id: null, created_at: iso(day(-90)) },
+      { id: tiktokAccountId, brand_id: BRAND_ID, platform: "tiktok", handle: "casagomezramirez", display_name: "Casa Gómez Ramírez", status: "demo", external_id: null, created_at: iso(day(-90)) },
     ],
-    account_metrics_daily: makeDaily(accountId, posts),
-    post_metrics_snapshots: posts,
+    social_insights_monthly: insights,
+    account_metrics_daily: dailyRows,
+    post_metrics_snapshots: [...posts, ...tiktokPosts],
     reports: [
       { id: "4e000000-0000-4000-8000-000000000001", brand_id: BRAND_ID, title: "Reporte mensual · Septiembre 2026", period_start: "2026-09-01", period_end: "2026-09-30", generated_by: "Equipo Casa GR", notes: "Mes de posicionamiento: la serie de chismes históricos fue la que más alcance trajo.", config: { source: "synthetic" }, created_at: iso(day(-32)) },
     ],
@@ -439,7 +631,7 @@ export function createLocalClient() {
       const db = database();
       const item = db.content_items.find((row) => row.id === args.p_item_id);
       if (!item) return { data: null, error: new Error("La publicación no existe") };
-      const allowed = { idea: ["borrador"], borrador: ["idea", "en_revision"], en_revision: ["borrador", "aprobado"], aprobado: ["borrador", "programado"], programado: ["aprobado", "publicado"], publicado: [] };
+      const allowed = { idea: ["borrador"], borrador: ["idea", "programado"], programado: ["borrador", "publicado"], publicado: [] };
       if (!allowed[item.status]?.includes(args.p_to_status)) return { data: null, error: new Error("Ese cambio de estado no está permitido") };
       const from_status = item.status;
       item.status = args.p_to_status;

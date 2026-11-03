@@ -11,8 +11,8 @@ import "./planner.css";
 
 const ZONE = "America/Bogota";
 const EMPTY_ROWS = [];
-const STATUSES = ["idea", "borrador", "en_revision", "aprobado", "programado", "publicado"];
-const NEXT_STATUS = { idea: ["borrador"], borrador: ["idea", "en_revision"], en_revision: ["borrador", "aprobado"], aprobado: ["en_revision", "programado"], programado: ["aprobado", "publicado"], publicado: [] };
+const STATUSES = ["idea", "borrador", "programado"];
+const NEXT_STATUS = { idea: ["borrador"], borrador: ["idea", "programado"], programado: ["borrador", "publicado"], publicado: [] };
 const EMPTY_CONTENT = { title: "", caption: "", notes: "", scheduled: "", campaign_id: "", platforms: [], assets: [], templates: {}, caption_bank_id: "", hashtag_set_id: "", cta_id: "" };
 const EMPTY_REMINDER = { title: "", notes: "", date: "", kind: "tarea", repeat_rule: "none", content_item_id: "", campaign_id: "", asset_id: "" };
 
@@ -122,15 +122,19 @@ export default function PlannerPage() {
 
   function itemCard(item) {
     const photos = itemAssets(item.id); const linkedCampaign = campaigns.find((campaign) => campaign.id === item.campaign_id);
-    return <article className="planner__card" key={item.id} draggable onDragStart={() => setDragItem(item)} onDragEnd={() => setDragItem(null)}>
-      <strong>{item.title}</strong>
-      {item.scheduled_at && <time>{formatInTimeZone(new Date(item.scheduled_at), ZONE, "d MMM · HH:mm")}</time>}
-      <p>{item.caption || item.notes}</p>
+    const comments = (data?.comments ?? []).filter((comment) => comment.content_item_id === item.id);
+    return <article className={`planner__card is-${item.status}`} key={item.id} draggable onDragStart={() => setDragItem(item)} onDragEnd={() => setDragItem(null)}>
+      <header className="planner__card-head">
+        <span className="planner__card-status">{t(`planner.status.${item.status}`)}</span>
+        {item.scheduled_at && <time>{formatInTimeZone(new Date(item.scheduled_at), ZONE, "d MMM · HH:mm")}</time>}
+      </header>
+      <h4 className="planner__card-title">{item.title}</h4>
+      {(item.caption || item.notes) && <p className="planner__card-copy">{item.caption || item.notes}</p>}
       {linkedCampaign && <span className="planner__campaign" style={{ borderColor: linkedCampaign.color }}>{linkedCampaign.name}</span>}
       <div className="planner__meta">{itemPlatforms(item.id).map((platform) => <span key={platform}>{platform === "instagram" ? "Instagram" : "TikTok"}</span>)}{photos.map((asset) => <span key={asset.id}>{asset.name}</span>)}</div>
       <label>{t("planner.changeStatus")}<select value={item.status} onChange={(event) => void moveItem(item, event.target.value)}>{[item.status, ...NEXT_STATUS[item.status]].map((value) => <option key={value} value={value}>{t(`planner.status.${value}`)}</option>)}</select></label>
-      <details className="planner__comments"><summary>{t("planner.comments", { count: (data?.comments ?? []).filter((comment) => comment.content_item_id === item.id).length })}</summary>
-        {(data?.comments ?? []).filter((comment) => comment.content_item_id === item.id).map((comment) => <div className="planner__comment" key={comment.id}><strong>{comment.author_name}</strong><p>{comment.body}</p></div>)}
+      <details className="planner__comments"><summary>{t("planner.comments", { count: comments.length })}</summary>
+        {comments.map((comment) => <div className="planner__comment" key={comment.id}><strong>{comment.author_name}</strong><p>{comment.body}</p></div>)}
         <form onSubmit={(event) => void sendContentComment(event,item.id)}><textarea aria-label={t("planner.writeComment")} maxLength={4000} value={commentDrafts[item.id] ?? ""} onChange={(event) => setCommentDrafts((drafts) => ({ ...drafts, [item.id]: event.target.value }))} /><button type="submit" disabled={addComment.isPending}>{t("planner.sendComment")}</button></form>
       </details>
       <footer><button onClick={() => editItem(item)}>{t("planner.edit")}</button><button className="planner__delete" onClick={async () => { if (confirm(t("planner.deletePiece.confirm", { name: item.title }))) { try { await deleteContent.mutateAsync(item.id); } catch (cause) { setError(cause.message || t("planner.error")); } } }}>{t("planner.deletePiece")}</button></footer>
@@ -140,6 +144,32 @@ export default function PlannerPage() {
   const nav = <nav className="planner__views" aria-label={t("planner.views")}>
     {[["board", "planner.view.board"], ["calendar", "planner.view.calendar"], ["reminders", "planner.view.reminders"]].map(([key, label]) => <button key={key} className={view === key ? "is-active" : ""} onClick={() => setView(key)}>{t(label)}</button>)}
   </nav>;
+
+  // The board keeps only the three working stages. Everything already published
+  // is still reachable, but collapsed in its own list so it stops taking space.
+  const published = items.filter((item) => item.status === "publicado");
+  const board = <>
+    <div className="planner__board">
+      {STATUSES.map((status) => {
+        const columnItems = items.filter((item) => item.status === status);
+        return <section className={`planner__column is-${status}`} key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragItem) void moveItem(dragItem, status); setDragItem(null); }}>
+          <header className="planner__column-head">
+            <h3>{t(`planner.status.${status}`)}<span>{columnItems.length}</span></h3>
+            <p>{t(`planner.column.${status}.hint`)}</p>
+          </header>
+          {columnItems.length ? columnItems.map(itemCard) : <p className="planner__column-empty">{t("planner.column.empty")}</p>}
+        </section>;
+      })}
+    </div>
+    {published.length ? <details className="planner__published">
+      <summary>{t("planner.published", { count: published.length })}</summary>
+      <p className="planner__published-hint">{t("planner.published.hint")}</p>
+      <ul>{published.map((item) => <li key={item.id}>
+        <div><strong>{item.title}</strong><span>{item.scheduled_at ? formatInTimeZone(new Date(item.scheduled_at), ZONE, "d MMM yyyy · HH:mm") : t("planner.published.noDate")}</span></div>
+        {item.published_url ? <a href={item.published_url} target="_blank" rel="noreferrer">{t("planner.published.open")}</a> : null}
+      </li>)}</ul>
+    </details> : null}
+  </>;
 
   return <section className="planner">
     <header className="planner__head"><div><p className="label-caps">{t("planner.label")}</p><h2>{t("planner.title")}</h2><p>{t("planner.lead")}</p></div><div className="planner__head-actions">{nav}<button className="btn btn--primary" type="button" aria-expanded={contentFormOpen} aria-controls={contentFormOpen ? "planner-content-form" : undefined} onClick={() => { setContentFormOpen((open) => !open); if (contentFormOpen) { setEditingId(null); setContentForm(EMPTY_CONTENT); } }}>{t("planner.addPiece")}</button></div></header>
@@ -179,7 +209,7 @@ export default function PlannerPage() {
       <div className="planner__form-submit planner__form-group--wide"><button className="btn btn--primary" disabled={createContent.isPending || updateContent.isPending}>{t(editingId ? "planner.saveEdit" : "planner.create")}</button></div>
     </form>}
 
-    {isPending ? <p className="state">{t("state.loading")}</p> : isError ? <div className="state" role="alert"><p>{t("state.error")}</p><button className="btn btn--ghost" onClick={() => refetch()}>{t("state.retry")}</button></div> : view === "board" ? <div className="planner__board">{STATUSES.map((status) => <section className="planner__column" key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragItem) void moveItem(dragItem,status); setDragItem(null); }}><h3>{t(`planner.status.${status}`)} <span>{items.filter((item) => item.status === status).length}</span></h3>{items.filter((item) => item.status === status).map(itemCard)}</section>)}</div> : view === "calendar" ? <section className="planner__calendar">
+    {isPending ? <p className="state">{t("state.loading")}</p> : isError ? <div className="state" role="alert"><p>{t("state.error")}</p><button className="btn btn--ghost" onClick={() => refetch()}>{t("state.retry")}</button></div> : view === "board" ? board : view === "calendar" ? <section className="planner__calendar">
       <header><button className="btn btn--ghost" onClick={() => setMonth(subMonths(month,1))}>{t("planner.previousMonth")}</button><h3>{format(month,"MMMM yyyy",{ locale: dateFnsEs })}</h3><button className="btn btn--ghost" onClick={() => setMonth(addMonths(month,1))}>{t("planner.nextMonth")}</button></header>
       <div className="planner__calendar-grid">{["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map((day) => <strong key={day}>{t(`planner.weekday.${day}`)}</strong>)}{days.map((day) => <div className={`planner__day${isSameMonth(day,month) ? "" : " is-outside"}${isToday(day) ? " is-today" : ""}`} key={day.toISOString()}><b>{format(day,"d")}</b>{items.filter((item) => item.scheduled_at && formatInTimeZone(new Date(item.scheduled_at), ZONE,"yyyy-MM-dd") === format(day,"yyyy-MM-dd")).map((item) => <span key={item.id} title={item.title}>{item.title}</span>)}</div>)}</div>
     </section> : <div className="planner__reminders">
