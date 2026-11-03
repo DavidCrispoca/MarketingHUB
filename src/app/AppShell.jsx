@@ -2,7 +2,6 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useI18n } from "../i18n/index.jsx";
 import BrandSwitcher from "../components/BrandSwitcher.jsx";
 import SessionMenu from "../components/SessionMenu.jsx";
-import ThemeSwitcher from "../components/ThemeSwitcher.jsx";
 import { isLocalMode } from "../lib/supabase.js";
 import "./AppShell.css";
 
@@ -20,7 +19,6 @@ export default function AppShell() {
         <div className="shell__actions">
           {isLocalMode && <span className="shell__local-badge" title={t("local.badge.title")}>{t("local.badge")}</span>}
           <BrandSwitcher />
-          <ThemeSwitcher />
           <SessionMenu />
         </div>
       </header>

@@ -7,7 +7,9 @@ import { useAuth } from "../auth/AuthProvider.jsx";
 import { useBrands, useCreateBrand } from "./useBrands.js";
 import "./brands.css";
 
-export default function BrandsPage() {
+// `alwaysList` keeps the brand manager reachable from inside a brand, even when
+// the workspace only has one brand (the normal entry point opens it directly).
+export default function BrandsPage({ alwaysList = false }) {
   const { t } = useI18n();
   const { grant } = useAuth();
   const { data: brands = [], isPending, isError, refetch } = useBrands();
@@ -41,7 +43,7 @@ export default function BrandsPage() {
 
   // Temporary single-brand workspace: everyone who redeems the code lands
   // directly on the only brand, and the list cannot grow by accident.
-  if (!isPending && !isError && brands.length === 1) {
+  if (!alwaysList && !isPending && !isError && brands.length === 1) {
     return <Navigate to={`/m/${brands[0].slug}`} replace />;
   }
 

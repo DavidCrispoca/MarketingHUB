@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
+import Section from "../../components/Section.jsx";
 import { campaignSchema, captionSchema, ctaSchema, hashtagSetSchema, templateSchema } from "../../lib/schemas.js";
 import { useBankData, useBankDelete, useBankMutation } from "./useBanks.js";
 import "./banks.css";
@@ -48,6 +49,11 @@ export default function BanksPage() {
     <header><p className="label-caps">{t("banks.label")}</p><h2>{t("banks.title")}</h2><p>{t("banks.lead")}</p></header>
     <nav className="banks__tabs" aria-label={t("banks.tabs.label")}>{TABS.map((key) => <button key={key} className={tab === key ? "is-active" : ""} onClick={() => { setTab(key); setError(""); }}>{tabNames[key]}</button>)}</nav>
     {error && <p className="banks__error" role="alert">{error}</p>}
+    <Section
+      eyebrow={t("banks.label")}
+      title={t("banks.section.create")}
+      description={t("banks.section.create.hint")}
+    >
     {tab !== "templates" && <form className="banks__form" onSubmit={submit}>
       <h3>{t(`banks.form.${tab}`)}</h3>
       {(tab === "captions" || tab === "ctas") && <label>{t(tab === "captions" ? "banks.titleField" : "banks.ctaField")}<input required maxLength={tab === "captions" ? 120 : 300} value={tab === "captions" ? form.title : form.text} onChange={(event) => change(tab === "captions" ? "title" : "text", event.target.value)} /></label>}
@@ -59,6 +65,13 @@ export default function BanksPage() {
       <button className="btn btn--primary" disabled={save.isPending}>{t("banks.save")}</button>
     </form>}
     {tab === "templates" && <form className="banks__form" onSubmit={submit}><h3>{t("banks.form.templates")}</h3><label>{t("banks.platform")}<select required value={form.platform} onChange={(event) => change("platform", event.target.value)}><option value="">{t("banks.platform.choose")}</option><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select></label><label>{t("banks.name")}<input required value={form.name} onChange={(event) => change("name", event.target.value)} /></label><div className="banks__date-row">{[["width","banks.width"],["height","banks.height"],["max_caption","banks.maxCaption"],["max_hashtags","banks.maxHashtags"]].map(([key,label]) => <label key={key}>{t(label)}<input type="number" min="1" value={form[key]} onChange={(event) => change(key,event.target.value)} /></label>)}</div><label>{t("banks.notes")}<textarea value={form.notes} onChange={(event) => change("notes",event.target.value)} /></label><button className="btn btn--primary" disabled={save.isPending}>{t("banks.save")}</button></form>}
+    </Section>
+    <Section
+      eyebrow={t("banks.label")}
+      title={t("banks.section.list")}
+      description={t("banks.section.list.hint")}
+      defaultOpen
+    >
     {isPending ? <p className="state">{t("state.loading")}</p> : isError ? <div className="state" role="alert"><p>{t("state.error")}</p><button className="btn btn--ghost" onClick={() => refetch()}>{t("state.retry")}</button></div> : <div className="banks__list">
       {rows.length === 0 && <p className="banks__empty">{t("banks.empty")}</p>}
       {rows.map((row) => <article className="banks__item" key={row.id}>
@@ -71,5 +84,6 @@ export default function BanksPage() {
         {tab !== "templates" || row.brand_id ? <button className="banks__delete" onClick={async () => { if (confirm(t("banks.delete.confirm", { name: row.name || row.title || row.text }))) { try { await remove.mutateAsync({ table: TABLES[tab], id: row.id }); } catch (cause) { setError(cause.message || t("banks.error")); } } }}>{t("banks.delete")}</button> : null}
       </article>)}
     </div>}
+    </Section>
   </section>;
 }

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
-import ThemeSwitcher from "../../components/ThemeSwitcher.jsx";
 import { useAuth } from "./AuthProvider.jsx";
 import "./access.css";
 
@@ -83,9 +82,6 @@ export default function AccessPage() {
         <p className="access__hint">{t("access.hint")}</p>
       </section>
 
-      <div className="access__theme">
-        <ThemeSwitcher />
-      </div>
     </div>
   );
 }

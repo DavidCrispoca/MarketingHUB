@@ -4,6 +4,7 @@ import { es as dateFnsEs } from "date-fns/locale";
 import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
 import { useOutletContext } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
+import Section from "../../components/Section.jsx";
 import { dailyMetricsSchema, postMetricsSchema, socialAccountSchema } from "../../lib/schemas.js";
 import { useSocial, useSocialMutation, useDeleteSocialAccount } from "./useSocial.js";
 import "./insights.css";
@@ -47,15 +48,34 @@ export default function InsightsPage() {
     <header className="insights__head"><div><p className="label-caps">{t("insights.label")}</p><h2>{t("insights.title")}</h2><p>{t("insights.lead")}</p></div><div className="insights__actions"><select aria-label={t("insights.range")} value={range} onChange={(event) => setRange(Number(event.target.value))}><option value="7">{t("insights.range7")}</option><option value="30">{t("insights.range30")}</option><option value="90">{t("insights.range90")}</option></select><button className="btn btn--ghost" onClick={() => window.print()}>{t("insights.print")}</button></div></header>
     {error && <p className="insights__error" role="alert">{error}</p>}
     <div className="insights__kpis">{[["followers",totals.followers],["reach",totals.reach],["views",totals.views],["posts",totals.posts]].map(([key,value]) => <article key={key}><span>{t(`insights.metric.${key}`)}</span><strong>{Intl.NumberFormat("es-CO").format(value)}</strong></article>)}</div>
+    <Section
+      eyebrow={t("insights.label")}
+      title={t("insights.section.performance")}
+      description={t("insights.section.performance.hint")}
+      defaultOpen
+    >
     <section className="insights__panel"><header><h3>{t("insights.performance")}</h3><span>{t("insights.lastDays", { days: range })}</span></header>{chart.length ? <div className="insights__chart" role="img" aria-label={t("insights.chartLabel")}>{chart.map((row) => <div className="insights__bar-wrap" key={`${row.account_id}-${row.metric_date}`} title={`${row.metric_date}: ${row.reach}`}><div className="insights__bar" style={{ height: `${Math.max(4, row.reach / peak * 100)}%` }} /><small>{format(new Date(`${row.metric_date}T12:00:00`), "d MMM", { locale: dateFnsEs })}</small></div>)}</div> : <p className="insights__empty">{t("insights.noMetrics")}</p>}</section>
     <section className="insights__panel"><header><h3>{t("insights.bestTime")}</h3></header>{bestHour ? <p>{t("insights.bestTime.result", { hour: String(bestHour.hour).padStart(2,"0"), count: bestHour.count, score: (bestHour.score * 100).toFixed(1) })}</p> : <p className="insights__empty">{t("insights.bestTime.empty")}</p>}</section>
+    </Section>
 
+    <Section
+      eyebrow={t("insights.label")}
+      title={t("insights.section.accounts")}
+      description={t("insights.section.accounts.hint")}
+    >
     <section className="insights__section"><h3>{t("insights.accounts")}</h3><div className="insights__accounts">{accounts.map((account) => <article key={account.id}><strong>{account.platform === "instagram" ? "Instagram" : "TikTok"} · @{account.handle}</strong><span>{account.display_name || t("insights.account.demo")}</span><button className="insights__delete" onClick={async () => { try { await remove.mutateAsync(account.id); } catch (cause) { setError(cause.message || t("insights.error")); } }}>{t("insights.account.delete")}</button></article>)}</div>
       <form className="insights__form" onSubmit={submitAccount}><h4>{t("insights.account.add")}</h4><label>{t("insights.platform")}<select value={accountForm.platform} onChange={(event) => accountChange("platform", event.target.value)}><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select></label><label>{t("insights.handle")}<input required maxLength={120} value={accountForm.handle} onChange={(event) => accountChange("handle",event.target.value.replace(/^@/,""))} /></label><label>{t("insights.displayName")}<input value={accountForm.display_name} onChange={(event) => accountChange("display_name",event.target.value)} /></label><button className="btn btn--primary" disabled={save.isPending}>{t("insights.account.createDemo")}</button></form>
     </section>
+    </Section>
 
+    <Section
+      eyebrow={t("insights.label")}
+      title={t("insights.section.register")}
+      description={t("insights.section.register.hint")}
+    >
     <div className="insights__forms"><form className="insights__form" onSubmit={submitDaily}><h3>{t("insights.addDaily")}</h3><label>{t("insights.account.select")}<select required value={dailyForm.account_id} onChange={(event) => dailyChange("account_id",event.target.value)}><option value="">—</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.platform} · @{account.handle}</option>)}</select></label><label>{t("insights.date")}<input type="date" required value={dailyForm.date} onChange={(event) => dailyChange("date",event.target.value)} /></label>{["followers","following","posts_count","reach","profile_views","views"].map((key) => <label key={key}>{t(`insights.metric.${key}`)}<input type="number" min="0" required value={dailyForm[key]} onChange={(event) => dailyChange(key,event.target.value)} /></label>)}<button className="btn btn--primary" disabled={save.isPending}>{t("insights.saveMetrics")}</button></form>
       <form className="insights__form" onSubmit={submitPost}><h3>{t("insights.addPost")}</h3><label>{t("insights.account.select")}<select required value={postForm.social_account_id} onChange={(event) => postChange("social_account_id",event.target.value)}><option value="">—</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.platform} · @{account.handle}</option>)}</select></label><label>{t("insights.linkPiece")}<select value={postForm.content_item_id} onChange={(event) => postChange("content_item_id",event.target.value)}><option value="">—</option>{items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label>{t("insights.publishedAt")}<input type="datetime-local" value={postForm.published} onChange={(event) => postChange("published",event.target.value)} /></label>{["views","likes","comments","shares","saves","reach"].map((key) => <label key={key}>{t(`insights.postMetric.${key}`)}<input type="number" min="0" required value={postForm[key]} onChange={(event) => postChange(key,event.target.value)} /></label>)}<button className="btn btn--primary" disabled={save.isPending}>{t("insights.savePost")}</button></form></div>
+    </Section>
     <p className="insights__note">{t("insights.demoNote")}</p>
   </section>;
 }

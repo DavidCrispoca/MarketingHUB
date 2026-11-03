@@ -51,6 +51,7 @@ function Gate() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<BrandsPage />} />
+        <Route path="marcas" element={<BrandsPage alwaysList />} />
         <Route path="m/:brandSlug" element={<BrandWorkspace />}>
           <Route index element={<BrandHome />} />
           <Route path="manual" element={suspending(<ManualPage />)} />

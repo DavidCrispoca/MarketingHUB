@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { useRef } from "react";
 import { useI18n } from "../../i18n/index.jsx";
+import Section from "../../components/Section.jsx";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { mediaFileSchema } from "../../lib/schemas.js";
 import { useCreateMedia, useDeleteMedia, useMedia, useUpdateMedia } from "./useMedia.js";
@@ -126,35 +127,48 @@ export default function MediaPage() {
         </label>
       </header>
 
-      <div className="media__upload-options">
-        <label>{t("media.folder")}<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder={t("media.folder.placeholder")} /></label>
-        <label>{t("media.tags")}<input value={tags} onChange={(event) => setTags(event.target.value)} placeholder={t("media.tags.placeholder")} /></label>
-      </div>
-      <p className="media__hint">{t("media.uploadHint")}</p>
-      {busy && <p className="media__progress" role="status">{t("media.uploadProgress", { name: uploadingName, progress })}<progress max="100" value={progress} /></p>}
-      {error && <p className="media__error" role="alert">{error}</p>}
+      <Section
+        eyebrow={t("media.label")}
+        title={t("media.section.upload")}
+        description={t("media.section.upload.hint")}
+      >
+        <div className="media__upload-options">
+          <label>{t("media.folder")}<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder={t("media.folder.placeholder")} /></label>
+          <label>{t("media.tags")}<input value={tags} onChange={(event) => setTags(event.target.value)} placeholder={t("media.tags.placeholder")} /></label>
+        </div>
+        <p className="media__hint">{t("media.uploadHint")}</p>
+        {busy && <p className="media__progress" role="status">{t("media.uploadProgress", { name: uploadingName, progress })}<progress max="100" value={progress} /></p>}
+        {error && <p className="media__error" role="alert">{error}</p>}
+      </Section>
 
-      <div className="media__filters">
-        <label className="media__search">{t("media.search")}<input value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <label>{t("media.status")}<select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="all">{t("media.filter.all")}</option>{["pendiente", "en_uso", "usado", "archivado"].map((value) => <option key={value} value={value}>{t(`media.status.${value}`)}</option>)}
-        </select></label>
-        <label>{t("media.kind")}<select value={kind} onChange={(event) => setKind(event.target.value)}><option value="all">{t("media.filter.all")}</option><option value="image">{t("media.kind.image")}</option><option value="video">{t("media.kind.video")}</option></select></label>
-        <label>{t("media.folder")}<select value={folder === "" || folders.includes(folder) ? folder : ""} onChange={(event) => setFolder(event.target.value)}><option value="">{t("media.filter.all")}</option>{folders.map((value) => <option key={value}>{value}</option>)}</select></label>
-      </div>
+      <Section
+        eyebrow={t("media.label")}
+        title={t("media.section.library")}
+        description={t("media.section.library.hint")}
+        defaultOpen
+      >
+        <div className="media__filters">
+          <label className="media__search">{t("media.search")}<input value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+          <label>{t("media.status")}<select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="all">{t("media.filter.all")}</option>{["pendiente", "en_uso", "usado", "archivado"].map((value) => <option key={value} value={value}>{t(`media.status.${value}`)}</option>)}
+          </select></label>
+          <label>{t("media.kind")}<select value={kind} onChange={(event) => setKind(event.target.value)}><option value="all">{t("media.filter.all")}</option><option value="image">{t("media.kind.image")}</option><option value="video">{t("media.kind.video")}</option></select></label>
+          <label>{t("media.folder")}<select value={folder === "" || folders.includes(folder) ? folder : ""} onChange={(event) => setFolder(event.target.value)}><option value="">{t("media.filter.all")}</option>{folders.map((value) => <option key={value}>{value}</option>)}</select></label>
+        </div>
 
-      {isPending ? <p className="state" role="status">{t("state.loading")}</p> : isError ? <div className="state" role="alert"><p>{t("state.error")}</p><button className="btn btn--ghost" onClick={() => refetch()}>{t("state.retry")}</button></div> : visible.length === 0 ? <p className="media__empty">{assets.length ? t("media.emptyFiltered") : t("media.empty")}</p> : (
-        <div className="media__grid">{visible.map((asset) => <article className="media__card" key={asset.id}>
-          <button className="media__preview" onClick={() => setSelected(asset)} aria-label={t("media.open", { name: asset.name })}>
-            {asset.thumb_url ? <img src={asset.thumb_url} alt="" loading="lazy" /> : <span>{asset.mime_type.startsWith("video/") ? "▶" : "▧"}</span>}
-            {asset.mime_type.startsWith("video/") && <b>▶</b>}
-          </button>
-          <div className="media__card-body"><strong title={asset.name}>{asset.name}</strong><span>{formatSize(asset.size_bytes)} · {asset.width && asset.height ? `${asset.width} × ${asset.height}` : t("media.metadata.unknown")}</span>
-            <div className="media__tags">{asset.folder && <span>{asset.folder}</span>}{asset.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
-            <select aria-label={t("media.status")} value={asset.status} onChange={(event) => update.mutate({ id: asset.id, status: event.target.value })}>{["pendiente", "en_uso", "usado", "archivado"].map((value) => <option key={value} value={value}>{t(`media.status.${value}`)}</option>)}</select>
-          </div>
-        </article>)}</div>
-      )}
+        {isPending ? <p className="state" role="status">{t("state.loading")}</p> : isError ? <div className="state" role="alert"><p>{t("state.error")}</p><button className="btn btn--ghost" onClick={() => refetch()}>{t("state.retry")}</button></div> : visible.length === 0 ? <p className="media__empty">{assets.length ? t("media.emptyFiltered") : t("media.empty")}</p> : (
+          <div className="media__grid">{visible.map((asset) => <article className="media__card" key={asset.id}>
+            <button className="media__preview" onClick={() => setSelected(asset)} aria-label={t("media.open", { name: asset.name })}>
+              {asset.thumb_url ? <img src={asset.thumb_url} alt="" loading="lazy" /> : <span>{asset.mime_type.startsWith("video/") ? "▶" : "▧"}</span>}
+              {asset.mime_type.startsWith("video/") && <b>▶</b>}
+            </button>
+            <div className="media__card-body"><strong title={asset.name}>{asset.name}</strong><span>{formatSize(asset.size_bytes)} · {asset.width && asset.height ? `${asset.width} × ${asset.height}` : t("media.metadata.unknown")}</span>
+              <div className="media__tags">{asset.folder && <span>{asset.folder}</span>}{asset.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
+              <select aria-label={t("media.status")} value={asset.status} onChange={(event) => update.mutate({ id: asset.id, status: event.target.value })}>{["pendiente", "en_uso", "usado", "archivado"].map((value) => <option key={value} value={value}>{t(`media.status.${value}`)}</option>)}</select>
+            </div>
+          </article>)}</div>
+        )}
+      </Section>
 
       {selected && <div className="media__dialog-backdrop" role="presentation" onClick={() => setSelected(null)}><section className="media__dialog" role="dialog" aria-modal="true" aria-label={selected.name} onClick={(event) => event.stopPropagation()}>
         <button className="media__close" onClick={() => setSelected(null)} aria-label={t("media.close")}>×</button>

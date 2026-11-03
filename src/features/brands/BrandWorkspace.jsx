@@ -53,9 +53,14 @@ export default function BrandWorkspace() {
           <h1>{brand.name}</h1>
           {brand.description ? <p className="brand__lead">{brand.description}</p> : null}
         </div>
-        <Link className="btn btn--primary brand__create" to={`/m/${brand.slug}/planner?crear=1`}>
-          {t("brand.action.new")}
-        </Link>
+        <div className="brand__head-actions">
+          <Link className="btn btn--ghost" to="/marcas" title={t("brand.action.allBrands.hint")}>
+            {t("brand.action.allBrands")}
+          </Link>
+          <Link className="btn btn--primary brand__create" to={`/m/${brand.slug}/planner?crear=1`}>
+            {t("brand.action.new")}
+          </Link>
+        </div>
       </header>
 
       <div className="brand__layout">

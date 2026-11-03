@@ -1,4 +1,5 @@
 import { Link, useOutletContext } from "react-router-dom";
+import Section from "../../components/Section.jsx";
 import { useI18n } from "../../i18n/index.jsx";
 import { useBrandMediaAssets } from "../../lib/brand-media.js";
 import { useBrandOverview } from "./useBrandOverview.js";
@@ -41,11 +42,15 @@ export default function BrandHome() {
         </div>
       </section>
 
-      <section className="brand-home__identity" aria-labelledby="brand-identity-title">
-        <header className="brand-home__section-head">
-          <div><p className="label-caps">{t("brand.home.identityEyebrow")}</p><h2 id="brand-identity-title">{t("brand.home.identity")}</h2></div>
+      <Section
+        className="brand-home__block"
+        eyebrow={t("brand.home.identityEyebrow")}
+        title={t("brand.home.identity")}
+        description={t("brand.home.identity.hint")}
+      >
+        <div className="brand-home__section-link">
           <Link to={`/m/${brand.slug}/manual`}>{t("brand.home.viewIdentity")}</Link>
-        </header>
+        </div>
         <div className="brand-home__identity-body">
           <div className="brand-home__logos" aria-label={t("brand.home.logosLabel")}>
             {logos.length ? logos.slice(0, 4).map((logo) => {
@@ -64,13 +69,17 @@ export default function BrandHome() {
             {!colors.length && <Link to={`/m/${brand.slug}/manual`}>{t("brand.home.noColors")}</Link>}
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="brand-home__library" aria-labelledby="brand-library-title">
-        <header className="brand-home__section-head">
-          <div><p className="label-caps">{t("brand.home.libraryEyebrow", { count: assets.length })}</p><h2 id="brand-library-title">{t("brand.home.library")}</h2></div>
+      <Section
+        className="brand-home__block"
+        eyebrow={t("brand.home.libraryEyebrow", { count: assets.length })}
+        title={t("brand.home.library")}
+        description={t("brand.home.library.hint")}
+      >
+        <div className="brand-home__section-link">
           <Link to={`/m/${brand.slug}/medios`}>{t("brand.home.viewLibrary")}</Link>
-        </header>
+        </div>
         {gallery.length ? <div className="brand-home__gallery">
           {gallery.map((asset) => <Link to={`/m/${brand.slug}/medios`} className="brand-home__asset" key={asset.id} title={asset.name}>
             {urls[asset.id] ? <img src={urls[asset.id]} alt={asset.name} loading="lazy" /> : <span aria-hidden="true">{asset.mime_type.startsWith("video/") ? "▶" : "▧"}</span>}
@@ -78,13 +87,17 @@ export default function BrandHome() {
           </Link>)}
           <Link className="brand-home__asset-add" to={`/m/${brand.slug}/medios`}>＋<span>{t("brand.home.addVisual")}</span></Link>
         </div> : <Link className="brand-home__empty-link" to={`/m/${brand.slug}/medios`}>{t("brand.home.noAssets")}</Link>}
-      </section>
+      </Section>
 
-      <section className="brand-home__reuse" aria-labelledby="brand-reuse-title">
-        <header className="brand-home__section-head">
-          <div><p className="label-caps">{t("brand.home.reuseEyebrow")}</p><h2 id="brand-reuse-title">{t("brand.home.reuse")}</h2></div>
+      <Section
+        className="brand-home__block"
+        eyebrow={t("brand.home.reuseEyebrow")}
+        title={t("brand.home.reuse")}
+        description={t("brand.home.reuse.hint")}
+      >
+        <div className="brand-home__section-link">
           <Link to={`/m/${brand.slug}/bancos`}>{t("brand.home.viewContent")}</Link>
-        </header>
+        </div>
         <div className="brand-home__reuse-grid">
           <article>
             <h3>{t("brand.home.captions", { count: captions.length })}</h3>
@@ -102,12 +115,19 @@ export default function BrandHome() {
             {!ctas.length && <p className="brand-home__muted">{t("brand.home.noCtas")}</p>}
           </article>
         </div>
-      </section>
+      </Section>
 
-      <section className="brand-home__next" aria-label={t("brand.home.nextUp")}>
-        <div><p className="label-caps">{t("brand.home.nextUp")}</p><h2>{nextItem?.title ?? t("brand.home.noNext")}</h2><p>{nextItem ? publicationDate(nextItem.scheduled_at) : t("brand.home.nextHint")}</p></div>
-        <div className="brand-home__progress"><strong>{isPending ? "—" : activeItems}</strong><span>{t("brand.home.activePieces")}</span><Link className="btn btn--ghost" to={`/m/${brand.slug}/planner`}>{t("brand.nav.planner")}</Link></div>
-      </section>
+      <Section
+        className="brand-home__block"
+        eyebrow={t("brand.home.nextUp")}
+        title={nextItem?.title ?? t("brand.home.noNext")}
+        description={t("brand.home.next.hint")}
+      >
+        <div className="brand-home__next">
+          <div><p>{nextItem ? publicationDate(nextItem.scheduled_at) : t("brand.home.nextHint")}</p></div>
+          <div className="brand-home__progress"><strong>{isPending ? "—" : activeItems}</strong><span>{t("brand.home.activePieces")}</span><Link className="btn btn--ghost" to={`/m/${brand.slug}/planner`}>{t("brand.nav.planner")}</Link></div>
+        </div>
+      </Section>
     </div>
   );
 }
