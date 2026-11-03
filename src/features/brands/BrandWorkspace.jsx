@@ -74,6 +74,7 @@ export default function BrandWorkspace() {
           <div className="brand__nav-group">
             <span>{t("brand.nav.group.insights")}</span>
             <NavLink className={navClass} to={`/m/${brand.slug}/dashboard`}>{t("brand.nav.dashboard")}</NavLink>
+            <NavLink className={navClass} to={`/m/${brand.slug}/reportes`}>{t("brand.nav.reports")}</NavLink>
           </div>
         </nav>
 

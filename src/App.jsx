@@ -20,6 +20,7 @@ const MediaPage = lazy(() => import("./features/media/MediaPage.jsx"));
 const BanksPage = lazy(() => import("./features/banks/BanksPage.jsx"));
 const PlannerPage = lazy(() => import("./features/planner/PlannerPage.jsx"));
 const InsightsPage = lazy(() => import("./features/social/InsightsPage.jsx"));
+const ReportsPage = lazy(() => import("./features/reports/ReportsPage.jsx"));
 const ImageEditorPage = lazy(() => import("./features/editor/ImageEditorPage.jsx"));
 
 function PageLoading() {
@@ -58,6 +59,7 @@ function Gate() {
           <Route path="bancos" element={suspending(<BanksPage />)} />
           <Route path="planner" element={suspending(<PlannerPage />)} />
           <Route path="dashboard" element={suspending(<InsightsPage />)} />
+          <Route path="reportes" element={suspending(<ReportsPage />)} />
           <Route path="editor/:assetId" element={suspending(<ImageEditorPage />)} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
