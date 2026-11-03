@@ -32,15 +32,21 @@ versionado).
   videos.
 - Guardar captions, grupos de hashtags, llamadas a la acción, plantillas por red y
   campañas.
-- Crear piezas en el planner, asociarles medios y campañas, moverlas por el flujo de
-  estados, ver el calendario y crear recordatorios.
+- Crear piezas en el planner, asociarles medios y campañas, moverlas entre **Idea,
+  Borrador y Programado**, ver el calendario y crear recordatorios.
+- Abrir cada sección de la app como un menú desplegable, con una línea que explica para
+  qué sirve antes de entrar.
 - Registrar métricas manualmente en modo demo, consultar un dashboard y guardar una
   copia editada de una imagen sin modificar el original.
+- Descargar el **reporte mensual en PDF**: 9 diapositivas 16:9 con Instagram y TikTok,
+  comparación contra el mes anterior, demografía, tráfico, mejores piezas y propuesta del
+  mes siguiente.
 
 El almacén admite archivos de hasta 100 MB; las cargas mayores a 6 MB usan partes
 reanudables. Las métricas se ingresan manualmente;
-la conexión automática requiere credenciales y configuración de Meta/TikTok. El PDF se
-obtiene mediante la opción de impresión del navegador.
+la conexión automática requiere credenciales y configuración de Meta/TikTok. El reporte
+mensual se genera en el navegador y queda registrado en la tabla `reports`; el manual
+sigue usando la impresión del navegador para su versión documento.
 
 ---
 
@@ -136,6 +142,7 @@ Supabase (`create_access_code` / `revoke_access_code`).
 │   ├── lib/               # cliente de Supabase, fechas, utilidades
 │   └── styles/            # tokens y estilos globales
 ├── docs/CONTEXT.md        # contexto funcional del proyecto
+├── docs/2026-11-02-cambios.md  # registro de la jornada de rediseño y reporte
 ├── supabase/              # migraciones, función redeem-code, pruebas SQL y seed
 └── vercel.json            # rewrite para SPA
 ```
@@ -147,9 +154,13 @@ Supabase (`create_access_code` / `revoke_access_code`).
 - Las migraciones nuevas deben aplicarse al proyecto Supabase para activar los módulos
   de medios, bancos, planner, métricas y editor.
 - La conexión automática a Instagram/TikTok requiere credenciales de aplicaciones
-  aprobadas y secretos de servidor. El dashboard funciona con datos ingresados a mano.
-- El reporte usa impresión del navegador para guardar en PDF; todavía no genera un PDF
-  con plantilla ni conserva reportes en Storage.
+  aprobadas y secretos de servidor. El dashboard funciona con datos ingresados a mano y
+  el reporte mensual usa datos de demostración hasta que exista esa conexión.
+- Facebook no está soportado: `social_accounts` solo acepta Instagram y TikTok.
+- El dashboard suma únicamente los snapshots diarios de Instagram; TikTok se lee del
+  resumen mensual dentro del reporte.
+- El historial de reportes guarda el periodo, el autor y las notas, pero no el PDF: el
+  archivo se regenera desde los datos cuando se descarga.
 - El editor crea copias con herramientas básicas de Canvas; no incluye aún edición por
   capas, stickers ni exportación avanzada.
 - Los recordatorios notifican mientras la app está abierta en el dispositivo que otorgó
